@@ -101,6 +101,16 @@ Proteus-1 uses three independent layers:
 3. **Toolchain unit tests.** Seven tests cover all 96 encodings, every mnemonic,
    directives, assembler errors, ISS arithmetic, exact `WAIT` semantics, and
    stack behaviour.
+4. **Formal properties.** Five invariants are proven with yosys SAT, each as a
+   bounded model check and as a temporal-induction proof: the PC is frozen while
+   the core is disabled, the cycle timer only advances by one or is cleared, the
+   capture FIFO never reports more entries than it holds, an idle loader has an
+   empty frame shifter, and stopped out-of-frame outputs are all low. These are
+   the properties the host loader and the firmware rely on, not decoration.
+5. **FPGA portability.** With no board available, the design was mapped,
+   placed, and routed for an ECP5 LFE5U-25F instead: 1,611 LUT4s (6%), 544
+   flip-flops (2%), and 65.9 MHz against the 32 MHz target. That proves the RTL
+   is portable and has margin, though it is not a hardware run.
 
 Synthesis with the IHP `typ_1p20V_25C` library maps to **257,363 µm²**, 34% of
 the nominal 6×4 tile area, with no latches and no multiply/divide cells. The
@@ -117,8 +127,9 @@ slack and 0 violating paths, and burns 7.35 mW typical. The same 17 pin-level
 tests that run on the RTL also pass on the hardened netlist.
 
 The honest gaps are in [`verification.md`](verification.md): no silicon, SPI
-target mode 0 only, transmit-only PS/2, and no formal properties. Those are the
-next things to close, not things the report pretends are done.
+target mode 0 only, transmit-only PS/2, a small formal property set rather than
+full ISA equivalence, and no FPGA board run. Those are the next things to close,
+not things the report pretends are done.
 
 ## Why this can win
 
@@ -160,6 +171,8 @@ the author's.
 cd test && make -B                              # 20 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
+./scripts/formal.sh                             # 5 proven invariants
+./scripts/synth_fpga.sh                         # ECP5 map, place, route, Fmax
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh
 ```
 

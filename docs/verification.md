@@ -136,20 +136,77 @@ post-place-and-route netlist, using the Icarus 13 build the action ships:
 GATES=yes: 17 passed, 3 skipped, 0 failed
 ```
 
-## 5. What is not proven
+## 5. Formal properties
+
+Properties live in `` `ifdef FORMAL `` blocks next to the RTL they describe, so
+they can read internal state without changing the synthesized logic. Yosys's
+built-in SAT engine proves each one twice: a 40-cycle bounded model check from
+an arbitrary power-up state, and a temporal-induction proof that the property
+holds in every reachable state after reset.
+
+```
+pc_freeze  PASS   the PC does not move while the core is disabled
+ timer     PASS   the cycle timer advances by one or is cleared, never jumps
+ capture   PASS   the capture FIFO count never exceeds its depth
+ loader    PASS   an idle loader has an empty frame shifter after one clock
+ outputs   PASS   stopped, out-of-frame outputs and enables are all low
+```
+
+These are the properties the firmware and the host loader depend on. `pc_freeze`
+is what makes host reprogramming safe: `en` is low for the whole time `CFG_CS_N`
+is asserted, so a frame cannot race a fetch. `loader` is what makes back-to-back
+frames independent. `capture` bounds the only array whose index comes from a
+counter, so `CAP_STATUS` can never report a depth that walks past the FIFO.
+
+Two things about this proof are worth stating plainly. First, the harness was
+validated: during development it produced counterexamples that turned out to be
+off-by-one errors in the properties themselves, not in the RTL, and one property
+was only true after reset — the assertions were corrected, not weakened, and the
+RTL was untouched. Second, the proof is not exhaustive: it covers the listed
+invariants with free inputs, but it does not prove ISA equivalence, branch
+reachability, or liveness, and there are no properties on the return stack yet.
+
+## 6. FPGA portability check
+
+The competition suggests trying the RTL on an FPGA before the ASIC flow. No
+board is available here, so the next best thing was done instead: the design is
+synthesized and placed-and-routed for a real FPGA fabric, and the tool reports
+what a board would tell us first — does it map, does it fit, and does it close
+timing.
+
+Yosys `synth_ecp5` followed by `nextpnr-ecp5` targeting an LFE5U-25F in a
+CABGA256 package at speed grade 6:
+
+| Metric | Value |
+|---|---:|
+| LUT4 | 1,611 / 24,288 (6%) |
+| Flip-flops | 544 / 24,288 (2%) |
+| I/O | 43 / 197 (21%) |
+| Block RAM / DSP | 0 / 0 (RAM maps to distributed LUT RAM) |
+| Achieved Fmax | **65.9 MHz** (nextpnr estimate) |
+| Required | 32 MHz — passes with 2.06× margin |
+
+This does not replace a board run: the pins are unconstrained, so the I/O paths
+and the actual connector pinout are unverified, and no bitstream was loaded. It
+does show the RTL is portable, uses no vendor-specific constructs, and has
+comfortable margin on modest fabric.
+
+## 7. What is not proven
 
 These are the honest gaps. They are not covered by the numbers above.
 
 - **No silicon measurement.** Every timing and power number above is a
   signoff-tool result on the hardened netlist, not a measurement of a chip.
-- **No FPGA run.** The repository keeps the template FPGA workflow, but it was
-  not run for this baseline.
+- **No FPGA board run.** The design is mapped and placed-and-routed for an ECP5
+  and closes timing at 65.9 MHz, but it has never driven a physical FPGA pin, and
+  the I/O constraints are not written.
 - **The SPI target is verified in mode 0 only.** The SPI master covers modes
   0–3; target-role CPOL/CPHA variants are firmware changes and are not tested.
 - **PS/2 is device-to-host transmit only.** There is no keyboard/host receive
   path, no scan-code table, and no bidirectional inhibit handling.
-- **No formal verification.** The loader FSM and return stack are tested by
-  directed and random simulation, not by properties or equivalence checking.
+- **Formal coverage is a small set of invariants.** Five properties are proven;
+  there is no ISA-equivalence proof, no liveness proof, and no return-stack
+  property. Simulation, not a proof, is still what covers most of the behaviour.
 - **Coverage is behavioural, not line/branch coverage.** No coverage tool was
   run, so no percentage is claimed.
 - **The 48 MHz target was not met, and 32 MHz is the declared clock.** The
@@ -163,7 +220,7 @@ These are the honest gaps. They are not covered by the numbers above.
   the flattened gate-level netlist does not preserve. They are skipped when
   `GATES=yes`; the other 17 pin-level tests exercise the netlist.
 
-## 6. Reproducing
+## 8. Reproducing
 
 ```sh
 cd test
@@ -173,6 +230,8 @@ cd ..
 python3 -m pytest -q tools/test_isa.py
 
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh
+./scripts/formal.sh        # 5 properties, BMC + induction
+./scripts/synth_fpga.sh    # ECP5 map, place, route, Fmax
 verilator --lint-only -Wall -Wno-fatal --top-module tt_um_proteus -Isrc \
   src/tt_um_proteus.v src/proteus_core.v src/proteus_loader.v \
   src/proteus_prog_ram.v src/proteus_data_ram.v src/proteus_capture.v

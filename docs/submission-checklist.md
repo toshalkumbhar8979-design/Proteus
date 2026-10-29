@@ -24,8 +24,11 @@ the status column only with evidence; do not tick an item because it is planned.
 | Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **passes** |
 | Post-route timing | GDS action report | **32 MHz passes**: slow-corner setup +6.10 ns, 0 violating paths, hold positive |
 | Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **17/17 pass** on synthesis and post-PnR netlists; 3 white-box tests skipped by design |
+| Formal verification | `scripts/formal.sh`, `formal` CI job | **5 invariants proved** (BMC + induction) |
+| FPGA check without hardware | `scripts/synth_fpga.sh` | **ECP5 map + PnR**: 1,611 LUT4, 544 FF, 65.9 MHz vs 32 MHz target |
 | AI-use disclosure | `docs/competition.md` | **done** |
 | Stretch protocols (USB, 10BASE-T) | not attempted | **honest gap** |
+| FPGA board run | no hardware available | **honest gap** (mapping, PnR, and timing verified instead) |
 | Optional demo video | not recorded | **optional** |
 | Competition submission form | Jane Street, closer to 2027-01-18 | **external** |
 
@@ -51,5 +54,7 @@ the status column only with evidence; do not tick an item because it is planned.
 - The 48 MHz build failed slow-corner setup. The declared clock is 32 MHz, and
   that build passed post-route timing with +6.10 ns of slow-corner slack.
 - No silicon exists. Timing, power, DRC, and LVS are signoff-tool results on the
-  hardened netlist, every protocol result is simulation, and no FPGA run or
-  formal verification is claimed.
+  hardened netlist, and every protocol result is simulation.
+- Formal coverage is five invariants, not ISA equivalence or liveness.
+- The FPGA result is synthesis, place-and-route, and an Fmax estimate without a
+  board; it is not a hardware run.

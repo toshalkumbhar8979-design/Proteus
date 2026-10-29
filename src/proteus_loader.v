@@ -155,6 +155,26 @@ module proteus_loader (
     end
   end
 
+`ifdef FORMAL
+  // Formal-only: after one idle clock, the frame shifter and bit counter are
+  // empty. That is what makes back-to-back frames independent: a short CS pulse
+  // cannot leave stale bits that shift into the next command.
+  reg f_past_valid;
+  initial f_past_valid = 1'b0;
+  always @(posedge clk) f_past_valid <= 1'b1;
+
+`ifndef F_NO_LOADER
+  always @(posedge clk) begin
+    if (f_past_valid && rst_n) begin
+      if (!cs_low && !$past(cs_low)) begin
+        assert (sr == 31'b0);
+        assert (bit_cnt == 6'd0);
+      end
+    end
+  end
+`endif
+`endif
+
 endmodule
 
 `default_nettype wire

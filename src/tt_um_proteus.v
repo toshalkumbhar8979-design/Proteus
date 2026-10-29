@@ -145,6 +145,25 @@ module tt_um_proteus (
   // Consume the unused MSBs so lint does not report them as dangling.
   wire _unused = &{ena, prog_waddr[7], cfg_raddr[7], 1'b0};
 
+`ifdef FORMAL
+  // Formal-only: with the CPU stopped and no frame in progress, every output
+  // and every output enable is driven low. A board must never see a floating or
+  // undriven pin between loader frames.
+  reg f_past_valid;
+  initial f_past_valid = 1'b0;
+  always @(posedge clk) f_past_valid <= 1'b1;
+
+`ifndef F_NO_OUT
+  always @(posedge clk) begin
+    if (!run && !cfg_busy) begin
+      assert (uo_out  == 8'b0);
+      assert (uio_out == 8'b0);
+      assert (uio_oe  == 8'b0);
+    end
+  end
+`endif
+`endif
+
 endmodule
 
 `default_nettype wire

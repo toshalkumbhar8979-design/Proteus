@@ -525,6 +525,38 @@ module proteus_core #(
     end
   end
 
+`ifdef FORMAL
+  // ---------------------------------------------------------------------------
+  // Formal-only properties. Not synthesized; proven by scripts/formal.sh.
+  // ---------------------------------------------------------------------------
+  reg f_past_valid;
+  initial f_past_valid = 1'b0;
+  always @(posedge clk) f_past_valid <= 1'b1;
+
+  always @(posedge clk) begin
+    if (f_past_valid && rst_n) begin
+      // Each property can be excluded with a define so scripts/formal.sh can
+      // report them one at a time instead of letting the first failure mask the
+      // rest.
+`ifndef F_NO_PC
+      // While the core is disabled (the loader owns the pins, or run=0), the
+      // program counter must not move. Otherwise a host writing a new image
+      // would race a fetch it thinks is stopped. `$past` is the value before the
+      // edge just taken, so the guard is the previous cycle's enable: that is
+      // the signal that decided whether this edge updated the register.
+      if ($past(rst_n) && !$past(en)) assert (pc == $past(pc));
+`endif
+`ifndef F_NO_TIMER
+      // The cycle timer either advances by exactly one or is cleared by TMR_CLR.
+      // No instruction may make it jump or run backwards. Again the guard is the
+      // previous cycle's enable, which is what gated the update being observed.
+      if ($past(rst_n) && $past(en))
+        assert ((timer == ($past(timer) + 16'd1)) || (timer == 16'd0));
+`endif
+    end
+  end
+`endif
+
 endmodule
 
 `default_nettype wire

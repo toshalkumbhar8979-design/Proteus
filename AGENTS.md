@@ -302,6 +302,37 @@ GDS flow again, roughly 2h45 of runner time, so unrelated pushes should be
 batched; cancelling a superseded run is safe because the artifacts are rebuilt
 from the same commit.
 
+### 2026-10-30 — D-021: Apache-2.0 stays; formal proofs and an FPGA check added
+
+**License.** The project stays Apache-2.0 rather than moving to MIT. Apache-2.0
+carries an express patent grant, which is the meaningful difference for a design
+intended to be fabricated and reused in hardware, and it matches the Tiny
+Tapeout template and the IHP PDK. MIT would be shorter but leaves patent rights
+implicit. Changing it would also mean touching every SPDX header for no gain.
+
+**Formal verification.** Five invariants now live in `ifdef FORMAL` blocks next
+to the RTL they describe and are proven by `scripts/formal.sh` using yosys's
+built-in SAT engine: PC frozen while the core is disabled, timer advances by one
+or is cleared, capture FIFO count bounded by its depth, loader frame shifter
+empty after one idle clock, and stopped out-of-frame outputs all low. Each is
+checked with a 40-cycle BMC and a temporal-induction proof, then all together.
+A `formal` job in `test.yaml` runs the same script in CI.
+
+The harness was validated by its own failures: the first run produced
+counterexamples that were off-by-one errors in the properties (`$past` compares
+the value before the edge just taken, not whether the register moved), and the
+capture bound only holds after reset has been seen. The assertions were
+corrected; the RTL was not changed to satisfy them. Keep that discipline: if a
+new property fails, decide whether the property or the design is wrong, and say
+which in the commit.
+
+**FPGA without hardware.** `scripts/synth_fpga.sh` maps the design with
+`synth_ecp5` and place-and-routes it with `nextpnr-ecp5` on an LFE5U-25F
+(CABGA256, speed 6). Result: 1,611 LUT4 (6%), 544 FFs (2%), 43 I/O, no DSP or
+block RAM, and **65.9 MHz** against the declared 32 MHz. This is a portability
+and timing-margin check, not a board run: pins are unconstrained and no
+bitstream was loaded. Do not describe it as hardware validation.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

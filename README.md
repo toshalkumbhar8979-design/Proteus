@@ -57,6 +57,8 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
 | Post-route timing | **32 MHz passes all three corners**: slow-corner setup slack **+6.10 ns**, 0 violating paths, hold positive everywhere |
 | Hardened area | 1,289 × 711 µm die; 383,307 µm² of placed standard cells; 7.35 mW typical at 32 MHz |
+| Formal | **5 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs) |
+| FPGA portability | ECP5 25k: 1,611 LUT4 (6%), 544 FF (2%), **65.9 MHz** against the 32 MHz target — mapped and routed, no board needed |
 
 ## ISA at a glance
 
@@ -189,3 +191,9 @@ Target: 6×4 tiles, IHP SG13CMOS5L, March 2027 shuttle, deadline 2027-01-18.
 ## License
 
 Apache-2.0. See [`LICENSE`](LICENSE).
+
+Apache-2.0 rather than MIT, deliberately: it carries an express patent grant,
+which matters for a design meant to be built and reused in hardware, and it is
+the license the Tiny Tapeout template and the IHP PDK already use. MIT would be
+shorter but would leave patent rights implicit. Contributions are accepted under
+the same terms.

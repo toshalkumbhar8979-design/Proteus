@@ -100,6 +100,25 @@ module proteus_capture #(
     end
   end
 
+`ifdef FORMAL
+  // Formal-only: the FIFO fill level can never exceed its depth, so CAP_STATUS
+  // cannot report a count the firmware would use to index past the array.
+`ifndef F_NO_CAP
+  // The bound is a post-reset guarantee, not a power-up one: an ASIC flop can
+  // come up in any state, which is exactly why the RTL has a reset. Track that
+  // reset has been seen and prove the invariant from there on.
+  reg f_reset_seen;
+  initial f_reset_seen = 1'b0;
+  always @(posedge clk) begin
+    if (!rst_n) f_reset_seen <= 1'b1;
+  end
+
+  always @(posedge clk) begin
+    if (f_reset_seen) assert (count <= DEPTH_COUNT);
+  end
+`endif
+`endif
+
 endmodule
 
 `default_nettype wire
