@@ -543,15 +543,22 @@ async def test_i2c_master_400k(dut):
     )
 
 
-async def i2c_controller_exchange(dut) -> tuple[bool, bool]:
-    """Drive an I2C write of 0x42 to 0x28 and return the two ACK bits."""
+async def i2c_controller_exchange(dut, scl_half: int = 20) -> tuple[bool, bool]:
+    """Drive an I2C write of 0x42 to 0x28 and return the two ACK bits.
+
+    scl_half is the SCL high/low time in clocks. The default 20 matches the
+    100 kHz controller model; 60 gives a 120-clock SCL period, which is 400 kHz
+    at the declared 48 MHz clock.
+    """
     dut.sda_pull.value = 0
 
     def sda() -> int:
         return (int(dut.uio_in.value) >> 3) & 1
 
-    async def wait(n: int = 20) -> None:
+    async def wait(n: int) -> None:
         await ClockCycles(dut.clk, n)
+
+    quarter = max(1, scl_half // 2)
 
     def drive_scl(low: bool) -> None:
         dut.scl_drive_low.value = 1 if low else 0
@@ -562,32 +569,32 @@ async def i2c_controller_exchange(dut) -> tuple[bool, bool]:
     # Idle high.
     drive_scl(False)
     drive_sda(False)
-    await wait(30)
+    await wait(scl_half + quarter)
 
     # START.
     drive_sda(True)
-    await wait(20)
+    await wait(scl_half)
     drive_scl(True)
-    await wait(20)
+    await wait(scl_half)
 
     async def send_bit(bit: int) -> None:
         drive_sda(bit == 0)
-        await wait(10)
+        await wait(quarter)
         drive_scl(False)   # release SCL high
-        await wait(20)
+        await wait(scl_half)
         drive_scl(True)    # pull SCL low
-        await wait(20)
+        await wait(scl_half)
 
     async def read_ack() -> bool:
         drive_sda(False)   # release SDA so the target can ACK
-        await wait(10)
+        await wait(quarter)
         drive_scl(False)   # ACK clock high
-        await wait(20)
+        await wait(scl_half)
         ack = sda() == 0
         drive_scl(True)
-        await wait(20)
+        await wait(scl_half)
         drive_sda(False)
-        await wait(10)
+        await wait(quarter)
         return ack
 
     async def send_byte(value: int) -> bool:
@@ -600,11 +607,11 @@ async def i2c_controller_exchange(dut) -> tuple[bool, bool]:
 
     # STOP.
     drive_sda(True)
-    await wait(20)
+    await wait(scl_half)
     drive_scl(False)
-    await wait(20)
+    await wait(scl_half)
     drive_sda(False)
-    await wait(30)
+    await wait(scl_half + quarter)
     return ack_addr, ack_data
 
 
@@ -623,6 +630,26 @@ async def test_i2c_target(dut):
     else:
         raise AssertionError("target never set the done flag")
     assert (int(dut.uo_out.value) & 0x7F) == 0x42, f"target received 0x{int(dut.uo_out.value) & 0x7F:02X}"
+
+
+@cocotb.test()
+async def test_i2c_target_400k(dut):
+    """Same target firmware with a 120-clock SCL period (400 kHz at 48 MHz)."""
+    await reset_dut(dut)
+    image = load_source("i2c_target.s")
+    await load_image(dut, image)
+    ack_addr, ack_data = await i2c_controller_exchange(dut, scl_half=60)
+    assert ack_addr, "400 kHz target did not ACK its address"
+    assert ack_data, "400 kHz target did not ACK the data byte"
+    for _ in range(2000):
+        await RisingEdge(dut.clk)
+        if int(dut.uo_out.value) & 0x80:
+            break
+    else:
+        raise AssertionError("400 kHz target never set the done flag")
+    assert (int(dut.uo_out.value) & 0x7F) == 0x42, (
+        f"400 kHz target received 0x{int(dut.uo_out.value) & 0x7F:02X}"
+    )
 
 
 def random_instruction(rng) -> int:

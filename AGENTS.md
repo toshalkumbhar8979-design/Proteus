@@ -201,6 +201,14 @@ using open-drain pins and a 9 x `WAIT 250` bit delay (about 10.5 kHz).
 for `0x5A`. All 16 tests pass. This adds a fourth protocol to the demonstration
 set; it does not claim host/keyboard receive support. The rest of D-012 stands.
 
+### 2026-10-29 — D-014: 400 kHz I2C target verified; test count now 17
+
+D-013 recorded 16 tests and a 100 kHz I2C target. `test_i2c_target_400k` drives
+the same `i2c_target.s` firmware with 120-clock SCL periods, which is 400 kHz at
+the declared 48 MHz clock. Address and data ACKs plus the received `0x42` are
+checked. All 17 tests pass. The target firmware is unchanged; this is a timing
+coverage addition, not a new fixed-function block. The rest of D-013 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

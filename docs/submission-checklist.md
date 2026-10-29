@@ -16,7 +16,7 @@ the status column only with evidence; do not tick an item because it is planned.
 | Verification write-up | `docs/verification.md` | **done** |
 | UART demonstrated | `programs/uart_tx.s`, `uart_rx.s`; tests | **done (RTL)** |
 | SPI demonstrated | `programs/spi_master.s`, `spi_master_cpol1.s`, `spi_target.s`; tests | **done (RTL, master modes 0–3, target mode 0)** |
-| I2C demonstrated | `programs/i2c_master.s`, `i2c_master_400k.s`, `i2c_target.s`; tests | **done (RTL, master 100/400 kHz, target 100 kHz)** |
+| I2C demonstrated | `programs/i2c_master.s`, `i2c_master_400k.s`, `i2c_target.s`; tests | **done (RTL, master and target 100/400 kHz)** |
 | Both controller and target roles | UART, SPI, I2C firmware and tests | **done** |
 | Other protocol beyond the headline three | PS/2 device transmitter, test | **done** |
 | Host loader documented | `docs/info.md`, `host/proteus_host.py` | **done** |
@@ -42,6 +42,6 @@ the status column only with evidence; do not tick an item because it is planned.
 ## Claims to keep honest
 
 - The local 257,363 µm² number is synthesis, not place-and-route.
-- The SPI target is mode 0 only; the I2C target is 100 kHz only.
+- The SPI target is mode 0 only.
 - The 48 MHz clock is a target until the GDS action reports timing.
 - No silicon, no FPGA run, and no formal verification are claimed.

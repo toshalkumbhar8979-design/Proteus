@@ -181,7 +181,8 @@ version if the 8x4 template becomes the target.
 ## 7. Timing and clocking
 
 Target: **48 MHz** (20.83 ns). The UART examples use 417 cycles/bit, which is
-115.2 kbaud with 0.08% error. I2C uses `WAIT 200` for roughly 100 kHz. SPI
+115.2 kbaud with 0.08% error. `i2c_master.s` uses `WAIT 200` for roughly
+100 kHz, and `i2c_master_400k.s` uses `WAIT 57` for roughly 400 kHz. SPI
 master uses a slower, branchy bit loop for easy probing; the target role samples
 on `SCK` and can be sped up by shortening the waits.
 

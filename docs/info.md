@@ -74,10 +74,10 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
    Both send `0xA5`; the receiver's CPHA setting chooses the sampling edge.
 4. For I2C, add 4.7k pull-ups from `uio[2]`/`uio[3]` to 3.3 V and load
    `programs/i2c_master.s` (~100 kHz), `programs/i2c_master_400k.s` (~400 kHz),
-   or `programs/i2c_target.s`.
+   or `programs/i2c_target.s` (works at both rates).
 5. For PS/2, add pull-ups to `uio[0]` (DATA) and `uio[1]` (CLK), load
    `programs/ps2_device.s`, and decode the 11-bit device frame with a host.
-6. Rebuild and rerun the simulation with `cd test && make -B`; all 16 tests
+6. Rebuild and rerun the simulation with `cd test && make -B`; all 17 tests
    should pass.
 
 On power-up the program memory is undefined, so the chip does nothing until the
