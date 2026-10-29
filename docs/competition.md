@@ -75,6 +75,7 @@ All of these run on the RTL through the real loader and are checked by cocotb:
 | SPI mode 0, MSB first | Target | `0xA5` received from a cocotb controller |
 | I2C ~100 kHz, address `0x28` | Controller | START, address, `0x42`, ACK, STOP |
 | I2C ~400 kHz, address `0x28` | Controller | Same exchange; SCL period measured at 110–130 clocks |
+| PS/2 device-to-host | Device | 11-bit frame, odd parity, open-drain clock/data, `0x5A` |
 | I2C ~100 kHz, address `0x50` | Target | Address match, ACK, data `0x42` |
 | Capture FIFO | Analyzer | Timestamped pin changes drained in order |
 | Pin waits | Timing | Level and edge stalls released exactly |
@@ -88,7 +89,7 @@ hard part of either role.
 The verification story is the part most likely to decide a close competition.
 Proteus-1 uses three independent layers:
 
-1. **Directed cocotb tests through the loader.** Fifteen tests drive real
+1. **Directed cocotb tests through the loader.** Sixteen tests drive real
    frames, real pin waveforms, and real bus models. They check what a scope
    would see, not internal signals.
 2. **Randomized RTL/ISS lock-step.** A generated program containing all twelve
@@ -146,7 +147,7 @@ the author's.
 ## Reproduce it
 
 ```sh
-cd test && make -B                              # 15 RTL tests
+cd test && make -B                              # 16 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh

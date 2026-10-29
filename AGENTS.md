@@ -192,6 +192,15 @@ a 57-cycle half-period bit loop (about 121 clocks per SCL period, 396.7 kHz at
 This supersedes the test count and I2C-coverage sentence in D-011; the rest of
 D-011 stands.
 
+### 2026-10-29 — D-013: PS/2 device transmitter verified; test count now 16
+
+D-012 recorded 15 tests and no protocol outside UART/SPI/I2C. `ps2_device.s` now
+implements a device-to-host PS/2 frame on `uio[0]` (DATA) and `uio[1]` (CLK),
+using open-drain pins and a 9 x `WAIT 250` bit delay (about 10.5 kHz).
+`test_ps2_device` decodes start, eight LSB-first data bits, odd parity, and stop
+for `0x5A`. All 16 tests pass. This adds a fourth protocol to the demonstration
+set; it does not claim host/keyboard receive support. The rest of D-012 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

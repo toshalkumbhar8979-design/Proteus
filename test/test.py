@@ -309,6 +309,41 @@ async def test_uart_rx(dut):
     assert int(dut.uo_out.value) == 0x5A
 
 
+async def ps2_receive(dut, nbits: int = 11, limit: int = 200000) -> list[int]:
+    """Decode a PS/2 frame from the open-drain uio[0]=DATA, uio[1]=CLK lines."""
+    bits: list[int] = []
+    last_clk = 1
+    for _ in range(limit):
+        await RisingEdge(dut.clk)
+        oe = int(dut.uio_oe.value)
+        out = int(dut.uio_out.value)
+        clk = 0 if ((oe & 0x02) and not (out & 0x02)) else 1
+        data = 0 if ((oe & 0x01) and not (out & 0x01)) else 1
+        if last_clk and not clk:
+            bits.append(data)
+            if len(bits) == nbits:
+                break
+        last_clk = clk
+    return bits
+
+
+@cocotb.test()
+async def test_ps2_device(dut):
+    await reset_dut(dut)
+    image = load_source("ps2_device.s")
+    await load_image(dut, image)
+    bits = await ps2_receive(dut, 11)
+    assert len(bits) == 11, f"PS/2 frame had {len(bits)} bits"
+    assert bits[0] == 0, "PS/2 start bit not low"
+    value = 0
+    for i, bit in enumerate(bits[1:9]):
+        value |= bit << i
+    assert value == 0x5A, f"PS/2 data 0x{value:02X}"
+    assert (sum(bits[1:9]) + bits[9]) & 1 == 1, "PS/2 odd parity failed"
+    assert bits[10] == 1, "PS/2 stop bit not high"
+    await wait_for_uo(dut, 0x5A, limit=5000)
+
+
 @cocotb.test()
 async def test_spi_master(dut):
     await reset_dut(dut)

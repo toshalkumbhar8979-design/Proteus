@@ -12,12 +12,13 @@ the status column only with evidence; do not tick an item because it is planned.
 | Architecture documentation | `docs/architecture.md` | **done** |
 | Instruction-set documentation | `docs/isa.md` | **done** |
 | Assembler or toolchain | `tools/proteus_asm.py`, `tools/proteus_isa.py` | **done** |
-| Example programs | `programs/*.s` (10 images) | **done** |
+| Example programs | `programs/*.s` (11 images) | **done** |
 | Verification write-up | `docs/verification.md` | **done** |
 | UART demonstrated | `programs/uart_tx.s`, `uart_rx.s`; tests | **done (RTL)** |
 | SPI demonstrated | `programs/spi_master.s`, `spi_master_cpol1.s`, `spi_target.s`; tests | **done (RTL, master modes 0–3, target mode 0)** |
 | I2C demonstrated | `programs/i2c_master.s`, `i2c_master_400k.s`, `i2c_target.s`; tests | **done (RTL, master 100/400 kHz, target 100 kHz)** |
 | Both controller and target roles | UART, SPI, I2C firmware and tests | **done** |
+| Other protocol beyond the headline three | PS/2 device transmitter, test | **done** |
 | Host loader documented | `docs/info.md`, `host/proteus_host.py` | **done** |
 | GDS build | `.github/workflows/gds.yaml` | **pending first push** |
 | Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **pending first push** |

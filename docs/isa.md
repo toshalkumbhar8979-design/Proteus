@@ -369,6 +369,7 @@ choices, not silicon constraints; the CPU can read and drive any pin.
 | `i2c_master.s` | `uio[2]=SCL`, `uio[3]=SDA`, open-drain, external pull-ups, ~100 kHz |
 | `i2c_master_400k.s` | same pins; WAIT 57 bit loop, ~400 kHz at 48 MHz |
 | `i2c_target.s` | `uio[2]=SCL`, `uio[3]=SDA`, address 0x28, received byte on `uo_out[6:0]` |
+| `ps2_device.s` | `uio[0]=DATA`, `uio[1]=CLK`, open-drain, 11-bit device frame |
 | `capture_demo.s` | captures `ui_in[1:0]` changes; reports on `uo_out` |
 
 The configuration port is always `ui_in[7]=CS_N`, `ui_in[6]=SCK`,

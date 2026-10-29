@@ -27,8 +27,8 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=15 PASS=15 FAIL=0 SKIP=0
-TOTAL SIM TIME=1,612,880 ns
+TESTS=16 PASS=16 FAIL=0 SKIP=0
+TOTAL SIM TIME=2,239,600 ns
 ```
 
 | Test | Stimulus | What it proves |
@@ -44,6 +44,7 @@ TOTAL SIM TIME=1,612,880 ns
 | `test_spi_target` | Drive `ui_in` as an SPI controller, shift `0xA5` | Target-role sampling and receive path |
 | `test_i2c_master` | Run `i2c_master.s` against a cocotb target model | START, address `0x50`, data `0x42`, ACK sampling, STOP |
 | `test_i2c_master_400k` | Run `i2c_master_400k.s`, measure SCL rising-to-rising periods | Same exchange at ~400 kHz; every measured bit period is 110–130 clocks (396 kHz at 48 MHz) |
+| `test_ps2_device` | Run `ps2_device.s`, decode DATA on CLK falling edges | Start, eight LSB-first data bits, odd parity, stop; data `0x5A` |
 | `test_i2c_target` | Run `i2c_target.s` against a cocotb controller model | Address match, ACK, received byte `0x42`, open-drain bus behaviour |
 | `test_capture` | Toggle pins with `CAP_EN=1`, drain with `CAP_POP` | Edge detection, timestamped entries, FIFO count/empty status, data ordering |
 | `test_pin_wait` | `WAIT_PIN0/1` on `ui_in[0]` | Level-sensitive stall and release, no missed edge |
@@ -104,6 +105,8 @@ These are the honest gaps. They are not covered by the numbers above.
 - **The I2C target is verified at roughly 100 kHz only.** The master covers
   both ~100 kHz and ~400 kHz; target-role 400 kHz is a firmware timing change
   and is not tested.
+- **PS/2 is device-to-host transmit only.** There is no keyboard/host receive
+  path, no scan-code table, and no bidirectional inhibit handling.
 - **No formal verification.** The loader FSM and return stack are tested by
   directed and random simulation, not by properties or equivalence checking.
 - **Coverage is behavioural, not line/branch coverage.** No coverage tool was

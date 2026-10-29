@@ -12,7 +12,7 @@ python3 -m pip install -r requirements.txt
 make -B
 ```
 
-Expected result: `TESTS=15 PASS=15 FAIL=0 SKIP=0`.
+Expected result: `TESTS=16 PASS=16 FAIL=0 SKIP=0`.
 
 ## What is covered
 
@@ -27,6 +27,7 @@ Expected result: `TESTS=15 PASS=15 FAIL=0 SKIP=0`.
 | `test_spi_target` | SPI target role, mode 0 |
 | `test_i2c_master` / `test_i2c_master_400k` | open-drain I2C master at 100 and 400 kHz |
 | `test_i2c_target` | open-drain I2C target at 100 kHz |
+| `test_ps2_device` | PS/2 11-bit device frame, odd parity |
 | `test_capture` | timestamped pin-change FIFO |
 | `test_pin_wait` | level waits on `ui_in` |
 | `test_random_cosim` | 1,000-clock RTL/ISS lock-step |

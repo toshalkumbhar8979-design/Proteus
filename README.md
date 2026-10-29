@@ -45,7 +45,7 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **15/15 pass** (reset, loader, ALU/memory, waits, UART, SPI modes 0–3, I2C master 100/400 kHz, I2C target 100 kHz, capture, co-simulation) |
+| Cocotb tests | **16/16 pass** (reset, loader, ALU/memory, waits, UART, SPI modes 0–3, I2C master 100/400 kHz, I2C target 100 kHz, PS/2, capture, co-simulation) |
 | RTL vs ISS | 1,000-cycle randomized lock-step, every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
@@ -109,6 +109,7 @@ because ASIC RAM powers up undefined.
 | [`i2c_master.s`](programs/i2c_master.s) | START/STOP, address `0x28`, write `0x42`, ACK, ~100 kHz |
 | [`i2c_master_400k.s`](programs/i2c_master_400k.s) | Same exchange at ~400 kHz; SCL period is measured by the test |
 | [`i2c_target.s`](programs/i2c_target.s) | Target role, address `0x50`, open-drain ACK |
+| [`ps2_device.s`](programs/ps2_device.s) | PS/2 device transmit: 11-bit frame, odd parity, open-drain clock/data |
 | [`capture_demo.s`](programs/capture_demo.s) | Capture FIFO records pin changes, firmware drains it |
 
 ## Quick start
@@ -117,7 +118,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 15 tests
+# RTL simulation: 16 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B
