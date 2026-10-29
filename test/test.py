@@ -471,6 +471,43 @@ async def test_i2c_master(dut):
     await target
 
 
+async def i2c_scl_periods(dut, cycles: int = 2400) -> list[int]:
+    """Return the clock counts between consecutive SCL rising edges."""
+    periods: list[int] = []
+    last_scl = 1
+    last_rise = None
+    for cycle in range(cycles):
+        await RisingEdge(dut.clk)
+        scl = (int(dut.uio_in.value) >> 2) & 1
+        if scl and not last_scl:
+            if last_rise is not None:
+                periods.append(cycle - last_rise)
+            last_rise = cycle
+        last_scl = scl
+    return periods
+
+
+@cocotb.test()
+async def test_i2c_master_400k(dut):
+    """400 kHz variant: verify the exchange and the SCL bit period."""
+    await reset_dut(dut)
+    image = load_source("i2c_master_400k.s")
+    target = cocotb.start_soon(i2c_target_model(dut))
+    await load_image(dut, image)
+    monitor = cocotb.start_soon(i2c_scl_periods(dut, 2400))
+    await wait_for_uo(dut, 0x5A, limit=20000)
+    periods = await monitor
+    await target
+
+    # At 48 MHz, 400 kHz is 120 clocks per SCL period. The firmware targets
+    # 121; allow 110-130 for the instruction path and the ACK stretch.
+    bit_periods = [p for p in periods if 100 <= p <= 140]
+    assert len(bit_periods) >= 8, f"too few SCL periods: {periods}"
+    assert all(110 <= p <= 130 for p in bit_periods), (
+        f"SCL periods outside the 400 kHz window: {periods}"
+    )
+
+
 async def i2c_controller_exchange(dut) -> tuple[bool, bool]:
     """Drive an I2C write of 0x42 to 0x28 and return the two ACK bits."""
     dut.sda_pull.value = 0

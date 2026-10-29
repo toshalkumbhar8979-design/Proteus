@@ -73,8 +73,9 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
    `programs/spi_master.s` (CPOL=0) or `programs/spi_master_cpol1.s` (CPOL=1).
    Both send `0xA5`; the receiver's CPHA setting chooses the sampling edge.
 4. For I2C, add 4.7k pull-ups from `uio[2]`/`uio[3]` to 3.3 V and load
-   `programs/i2c_master.s` or `programs/i2c_target.s`.
-5. Rebuild and rerun the simulation with `cd test && make -B`; all 14 tests
+   `programs/i2c_master.s` (~100 kHz), `programs/i2c_master_400k.s` (~400 kHz),
+   or `programs/i2c_target.s`.
+5. Rebuild and rerun the simulation with `cd test && make -B`; all 15 tests
    should pass.
 
 On power-up the program memory is undefined, so the chip does nothing until the

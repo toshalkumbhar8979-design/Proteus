@@ -45,7 +45,7 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **14/14 pass** (reset, loader, ALU/memory, waits, UART, SPI modes 0–3, I2C, capture, co-simulation) |
+| Cocotb tests | **15/15 pass** (reset, loader, ALU/memory, waits, UART, SPI modes 0–3, I2C 100/400 kHz, capture, co-simulation) |
 | RTL vs ISS | 1,000-cycle randomized lock-step, every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
@@ -106,7 +106,8 @@ because ASIC RAM powers up undefined.
 | [`spi_master.s`](programs/spi_master.s) | SPI modes 0–1 (CPOL=0), MSB first, `0xA5` |
 | [`spi_master_cpol1.s`](programs/spi_master_cpol1.s) | SPI modes 2–3 (CPOL=1), MSB first, `0xA5` |
 | [`spi_target.s`](programs/spi_target.s) | SPI target role on `ui_in`, mode 0 |
-| [`i2c_master.s`](programs/i2c_master.s) | START/STOP, address `0x28`, write `0x42`, ACK |
+| [`i2c_master.s`](programs/i2c_master.s) | START/STOP, address `0x28`, write `0x42`, ACK, ~100 kHz |
+| [`i2c_master_400k.s`](programs/i2c_master_400k.s) | Same exchange at ~400 kHz; SCL period is measured by the test |
 | [`i2c_target.s`](programs/i2c_target.s) | Target role, address `0x50`, open-drain ACK |
 | [`capture_demo.s`](programs/capture_demo.s) | Capture FIFO records pin changes, firmware drains it |
 
@@ -116,7 +117,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 14 tests
+# RTL simulation: 15 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B

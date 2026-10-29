@@ -12,11 +12,11 @@ the status column only with evidence; do not tick an item because it is planned.
 | Architecture documentation | `docs/architecture.md` | **done** |
 | Instruction-set documentation | `docs/isa.md` | **done** |
 | Assembler or toolchain | `tools/proteus_asm.py`, `tools/proteus_isa.py` | **done** |
-| Example programs | `programs/*.s` (9 images) | **done** |
+| Example programs | `programs/*.s` (10 images) | **done** |
 | Verification write-up | `docs/verification.md` | **done** |
 | UART demonstrated | `programs/uart_tx.s`, `uart_rx.s`; tests | **done (RTL)** |
 | SPI demonstrated | `programs/spi_master.s`, `spi_master_cpol1.s`, `spi_target.s`; tests | **done (RTL, master modes 0–3, target mode 0)** |
-| I2C demonstrated | `programs/i2c_master.s`, `i2c_target.s`; tests | **done (RTL, ~100 kHz)** |
+| I2C demonstrated | `programs/i2c_master.s`, `i2c_master_400k.s`, `i2c_target.s`; tests | **done (RTL, master 100/400 kHz, target 100 kHz)** |
 | Both controller and target roles | UART, SPI, I2C firmware and tests | **done** |
 | Host loader documented | `docs/info.md`, `host/proteus_host.py` | **done** |
 | GDS build | `.github/workflows/gds.yaml` | **pending first push** |
@@ -41,6 +41,6 @@ the status column only with evidence; do not tick an item because it is planned.
 ## Claims to keep honest
 
 - The local 257,363 µm² number is synthesis, not place-and-route.
-- The SPI target is mode 0 only; 400 kHz I2C is a firmware timing change, not a tested result.
+- The SPI target is mode 0 only; the I2C target is 100 kHz only.
 - The 48 MHz clock is a target until the GDS action reports timing.
 - No silicon, no FPGA run, and no formal verification are claimed.

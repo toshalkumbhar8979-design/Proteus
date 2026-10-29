@@ -183,6 +183,15 @@ mode-aware cocotb receiver. All 14 tests pass. The SPI target remains mode 0
 only. This supersedes the test count and SPI-coverage sentence in D-010; the
 rest of D-010 stands.
 
+### 2026-10-29 — D-012: 400 kHz I2C master verified; test count now 15
+
+D-011 recorded 14 tests and I2C at roughly 100 kHz. `i2c_master_400k.s` now uses
+a 57-cycle half-period bit loop (about 121 clocks per SCL period, 396.7 kHz at
+48 MHz), and `test_i2c_master_400k` verifies both the exchange and a measured
+110–130-clock SCL period. All 15 tests pass. The I2C target remains 100 kHz.
+This supersedes the test count and I2C-coverage sentence in D-011; the rest of
+D-011 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

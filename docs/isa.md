@@ -366,7 +366,8 @@ choices, not silicon constraints; the CPU can read and drive any pin.
 | `spi_master.s` | `uio[0]=CS_N`, `uio[1]=MOSI`, `uio[2]=MISO`, `uio[3]=SCK`; CPOL=0, modes 0–1 |
 | `spi_master_cpol1.s` | same pins; SCK idles high, CPOL=1, modes 2–3 |
 | `spi_target.s` | `ui[0]=CS_N`, `ui[1]=MOSI`, `ui[2]=SCK`; received byte on `uo_out`, mode 0 |
-| `i2c_master.s` | `uio[2]=SCL`, `uio[3]=SDA`, open-drain, external pull-ups |
+| `i2c_master.s` | `uio[2]=SCL`, `uio[3]=SDA`, open-drain, external pull-ups, ~100 kHz |
+| `i2c_master_400k.s` | same pins; WAIT 57 bit loop, ~400 kHz at 48 MHz |
 | `i2c_target.s` | `uio[2]=SCL`, `uio[3]=SDA`, address 0x28, received byte on `uo_out[6:0]` |
 | `capture_demo.s` | captures `ui_in[1:0]` changes; reports on `uo_out` |
 
