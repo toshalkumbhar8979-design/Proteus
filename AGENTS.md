@@ -254,6 +254,39 @@ new timing; no 32 MHz post-route pass is claimed until it completes.
 
 This supersedes the 48 MHz target in D-010. The rest of D-010 stands.
 
+### 2026-10-30 — D-019: 32 MHz GDS passes; 6x4 is final
+
+The retimed build (commit `abbebf2`) hardened cleanly in run 40903018243. The
+GDS action produced `tt_um_proteus.gds`, LEF, SPEF, and OASIS for the 6x4
+SG13CMOS5L allocation, and the `gds`, `precheck`, and `gl_test` jobs all passed.
+
+Signoff numbers from the hardened netlist (`nom_slow_1p08V_125C` unless noted):
+setup worst slack **+6.1027 ns**, TNS 0, 0 setup violators, 0 hold violators;
+typical-corner setup +15.318 ns; fast-corner setup +20.144 ns; hold slack
++0.685 / +0.331 / +0.124 ns across slow / typical / fast. Die bounding box
+1,289.28 x 710.64 um (916,214 um^2), core 902,417 um^2, placed standard cells
+383,307 um^2, total power 7.35 mW typical. Magic reports 0 DRC errors and 0
+unmatched LVS devices or nets. The +6.10 ns result matches the 6.25 ns the
+retime predicted, so the 48 MHz failure is closed rather than papered over.
+
+The gate-level suite runs on the flattened netlist with three white-box
+co-simulation tests skipped by design. All 17 pin-level tests pass on both the
+synthesis netlist and the post-place-and-route netlist. One environment trap is
+worth recording: the PDK flop models drive their delayed clock only from
+`$setuphold`, which the system Icarus Verilog 12 does not implement, so a local
+gate-level run reports X on every output. The action's Icarus 13 build handles
+the models correctly. Do not "fix" the RTL for that symptom.
+
+Only the optional Pages `viewer` job fails, with HTTP 404 from the Pages API
+because Pages is not enabled for the repository; it gates nothing. The GDS
+artifact is not committed to the repository. Tiny Tapeout takes the design from
+the repository and the CI run, so the artifact is the build output to hand to the
+shuttle, not source.
+
+This confirms A-002: 6x4 is the final allocation. 8x4 would add area, not pins,
+protocols, or ISA capability, and the hardened 6x4 core uses 383,307 um^2 of
+logic. Revisit only if a future feature cannot fit.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

@@ -20,30 +20,35 @@ the status column only with evidence; do not tick an item because it is planned.
 | Both controller and target roles | UART, SPI, I2C firmware and tests | **done** |
 | Other protocol beyond the headline three | PS/2 device transmitter, test | **done** |
 | Host loader documented | `docs/info.md`, `host/proteus_host.py` | **done** |
-| GDS build | `.github/workflows/gds.yaml` | **first run: DRC/LVS/antenna pass; setup failed at 48 MHz; 32 MHz rerun pending** |
-| Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **blocked on a green GDS run** |
-| Post-route timing | GDS action report | **48 MHz WNS -4.17 ns; 32 MHz retime pending** |
-| Gate-level smoke test | `test/Makefile GATES=yes` | **not run yet; 3 white-box tests skipped by design, 17 pin-level tests ready** |
+| GDS build | `.github/workflows/gds.yaml` | **passes** (run 40903018243, commit `abbebf2`); 0 DRC, 0 LVS, antenna clean |
+| Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **passes** |
+| Post-route timing | GDS action report | **32 MHz passes**: slow-corner setup +6.10 ns, 0 violating paths, hold positive |
+| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **17/17 pass** on synthesis and post-PnR netlists; 3 white-box tests skipped by design |
 | AI-use disclosure | `docs/competition.md` | **done** |
 | Stretch protocols (USB, 10BASE-T) | not attempted | **honest gap** |
 | Optional demo video | not recorded | **optional** |
 | Competition submission form | Jane Street, closer to 2027-01-18 | **external** |
 
-## After the first push
+## Remaining before submission
 
-1. Open the **Actions** tab and let `test`, `gds`, `precheck`, and `gl_test` run.
-2. If `gds` fails on timing or density, fix the RTL/config and rerun. Do not
-   change the declared clock without updating every protocol timing constant,
-   its test, and the documentation together.
-3. If `precheck` fails, read the report before changing `info.yaml`.
-4. Copy the passing GDS/precheck run URL into the README and the competition
-   write-up.
-5. Only then submit the repository link through the official form.
+1. Keep `test`, `gds`, `precheck`, and `gl_test` green on every push. A change
+   that touches timing constants must update the firmware, its test, and the
+   documentation together.
+2. If `gds` fails on timing or density, fix the RTL/config and rerun; never
+   lower the declared clock alone.
+3. Enable GitHub Pages in the repository settings if the layout `viewer` job is
+   wanted. Its failure is a Pages configuration error (HTTP 404), not a design
+   failure, and no other job depends on it.
+4. Record the final passing run URL in the README and the competition write-up.
+5. Submit the repository link through the official form.
 
 ## Claims to keep honest
 
-- The local 257,363 µm² number is synthesis, not place-and-route.
+- The local 257,363 µm² number is a synthesis estimate; the hardened numbers
+  are 383,307 µm² of placed cells in a 902,417 µm² core.
 - The SPI target is mode 0 only.
-- The 48 MHz build failed slow-corner setup. The declared clock is now 32 MHz;
-  a post-route pass at 32 MHz is not claimed until the GDS rerun completes.
+- The 48 MHz build failed slow-corner setup. The declared clock is 32 MHz, and
+  that build passed post-route timing with +6.10 ns of slow-corner slack.
+- No silicon exists. Timing, power, DRC, and LVS are signoff-tool results on the
+  hardened netlist, and every protocol result is simulation.
 - No silicon, no FPGA run, and no formal verification are claimed.

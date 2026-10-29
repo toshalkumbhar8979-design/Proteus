@@ -42,6 +42,9 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 
 ## Verified today
 
+Every claim below is reproducible from this repository. The hardened numbers
+come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/40903018243).
+
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
@@ -51,8 +54,9 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
-| GDS / precheck | DRC, LVS, and antenna checks pass; the first run then failed setup timing at 48 MHz |
-| Post-route timing | 48 MHz missed the slow corner by 4.17 ns; retimed to **32 MHz** (31.25 ns), rerun pending |
+| GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
+| Post-route timing | **32 MHz passes all three corners**: slow-corner setup slack **+6.10 ns**, 0 violating paths, hold positive everywhere |
+| Hardened area | 1,289 × 711 µm die; 383,307 µm² of placed standard cells; 7.35 mW typical at 32 MHz |
 
 ## ISA at a glance
 
@@ -164,11 +168,13 @@ scripts/   synthesis and program-build helpers
 The RTL, assembler, ISS, and tests are complete for the competition baseline.
 The program memory is 128 words, not 256: synthesis showed the larger memory at
 56% of the nominal tile area before routing, which is not a safe tapeout margin.
-There is no SRAM macro, no interrupt controller, no data-memory readback command,
-and the first hardened run passed DRC, LVS, and antenna checks but missed
-post-route setup at 48 MHz. The design is retimed to 32 MHz; the rerun is
-pending. The GDS action remains the authority for timing and precheck. See [`docs/verification.md`](docs/verification.md) for the honest
-list of unproven items.
+There is no SRAM macro, no interrupt controller, and no data-memory readback
+command. The first hardened run passed DRC, LVS, and antenna checks but missed
+post-route setup at 48 MHz; the design was retimed to 32 MHz and the rerun
+**passed**, with +6.10 ns of slow-corner setup slack and zero violating paths.
+Both the GDS and gate-level jobs are green in CI. See
+[`docs/verification.md`](docs/verification.md) for the exact numbers and the
+honest list of unproven items.
 
 ## Competition context
 

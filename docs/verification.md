@@ -93,38 +93,75 @@ Verilator `-Wall` reports one warning: the `N` flag is not consumed by any
 branch in ISA v1. It is architectural state, visible to the ISS and to future
 instructions, so the warning is intentional rather than suppressed.
 
-## 4. What is not proven
+## 4. Hardened build
+
+The Tiny Tapeout GDS action hardened the design on commit `abbebf2` and produced
+a GDS, LEF, SPEF, and OASIS for the 6×4 SG13CMOS5L allocation. Run:
+`actions/runs/40903018243`. This is the authority for the numbers below; the
+local synthesis figure is only an estimate of them.
+
+| Metric | Value |
+|---|---:|
+| Die bounding box | 1,289.28 × 710.64 µm (916,214 µm²) |
+| Core area | 902,417 µm² |
+| Placed standard-cell area | 383,307 µm² |
+| Setup slack, slow `1p08V/125C` | **+6.103 ns** (0 violating paths) |
+| Setup slack, typical `1p20V/25C` | +15.318 ns (0 violating paths) |
+| Setup slack, fast `1p32V/-40C` | +20.144 ns (0 violating paths) |
+| Hold slack, slow / typical / fast | +0.685 / +0.331 / +0.124 ns |
+| Total power, typical | 7.35 mW (6.13 internal, 1.18 switching, 0.04 leakage) |
+| DRC errors | 0 |
+| LVS errors | 0 |
+
+The worst path that broke the 48 MHz run needed 25.0 ns. At the declared
+31.25 ns period the slow corner now reports 6.10 ns of margin, which matches
+the 6.25 ns the retime predicted. Area is not the constraint: of the 902,417 µm²
+core, only 383,307 µm² is standard-cell logic, and the rest is fill, decap, and
+the pad ring.
+
+Every job that gates the chip passed: `gds`, `precheck`, and `gl_test`. Only
+the optional Pages `viewer` job failed, and its log shows GitHub Pages is not
+enabled for the repository (HTTP 404 on deployment), not a design error.
+
+### Gate-level tests
+
+The `GATES=yes` path runs the same cocotb suite against a flattened netlist.
+Three co-simulation tests read named core registers and are skipped there; the
+other 17 drive real pins. They pass on **both** the synthesis netlist and the
+post-place-and-route netlist, using the Icarus 13 build the action ships:
+
+```
+GATES=yes: 17 passed, 3 skipped, 0 failed
+```
+
+## 5. What is not proven
 
 These are the honest gaps. They are not covered by the numbers above.
 
-- **No place-and-route, no post-route timing, no GDS, no precheck.** LibreLane
-  is not installed in the development environment. The local area number is a
-  synthesis estimate; the Tiny Tapeout GDS GitHub action is the authority.
-- **No gate-level simulation.** The testbench has a `GATES=yes` path, but no
-  hardened netlist exists yet to run it against.
-- **No silicon.** All protocol results are RTL simulation.
+- **No silicon measurement.** Every timing and power number above is a
+  signoff-tool result on the hardened netlist, not a measurement of a chip.
 - **No FPGA run.** The repository keeps the template FPGA workflow, but it was
   not run for this baseline.
 - **The SPI target is verified in mode 0 only.** The SPI master covers modes
   0–3; target-role CPOL/CPHA variants are firmware changes and are not tested.
-
 - **PS/2 is device-to-host transmit only.** There is no keyboard/host receive
   path, no scan-code table, and no bidirectional inhibit handling.
 - **No formal verification.** The loader FSM and return stack are tested by
   directed and random simulation, not by properties or equivalence checking.
 - **Coverage is behavioural, not line/branch coverage.** No coverage tool was
   run, so no percentage is claimed.
-- **The 48 MHz target was not met.** The first hardened run completed routing,
-  DRC, LVS, and antenna checks, then failed post-route setup at the slow corner:
-  WNS -4.1715 ns over 346 paths, with a 25.0 ns critical path. The design is
-  re-declared at 32 MHz (31.25 ns), which leaves 6.25 ns of slow-corner margin.
-  The GDS rerun is the authority; no post-route pass at 32 MHz is claimed yet.
+- **The 48 MHz target was not met, and 32 MHz is the declared clock.** The
+  first hardened run completed routing, DRC, LVS, and antenna checks, then
+  failed post-route setup at the slow corner: WNS -4.1715 ns over 346 paths,
+  with a 25.0 ns critical path. The retimed 32 MHz (31.25 ns) build passes with
+  +6.10 ns of slow-corner slack. Every real-world rate in the docs assumes
+  32 MHz.
 - **Three co-simulation tests are RTL-only.** `test_timer_cosim`,
   `test_opcode_sweep`, and `test_random_cosim` read named core registers, which
   the flattened gate-level netlist does not preserve. They are skipped when
   `GATES=yes`; the other 17 pin-level tests exercise the netlist.
 
-## 5. Reproducing
+## 6. Reproducing
 
 ```sh
 cd test

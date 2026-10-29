@@ -107,10 +107,17 @@ the nominal 6×4 tile area, with no latches and no multiply/divide cells. The
 256-word program memory was measured at 56% and rejected; the trade-off is
 documented rather than hidden.
 
-The honest gaps are in [`verification.md`](verification.md): no place-and-route
-yet, no gate-level simulation, no silicon, SPI target mode 0 only, and no formal
-properties. Those are the next things to close, not things the report pretends
-are done.
+The design is hardened, not just synthesized. The Tiny Tapeout GDS action
+produced a clean 6×4 SG13CMOS5L layout: 383,307 µm² of placed cells in a
+902,417 µm² core, 0 DRC errors, 0 LVS errors, and a passing precheck. Because
+the first run missed setup at 48 MHz, the clock was re-declared at 32 MHz; that
+build closes timing at every corner with **+6.10 ns** of slow-corner setup
+slack and 0 violating paths, and burns 7.35 mW typical. The same 17 pin-level
+tests that run on the RTL also pass on the hardened netlist.
+
+The honest gaps are in [`verification.md`](verification.md): no silicon, SPI
+target mode 0 only, transmit-only PS/2, and no formal properties. Those are the
+next things to close, not things the report pretends are done.
 
 ## Why this can win
 
