@@ -37,8 +37,9 @@ Protocol emulation is a **timing** problem, not a peripheral checklist.
   what I2C, wired-OR buses, and target-role emulation need.
 
 New protocols are firmware loaded over the configuration port after
-fabrication. The same chip can be a UART, an SPI controller in any mode, an I2C
-target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
+fabrication. The same chip can be a UART, an SPI controller (mode 0 verified;
+modes 1–3 are firmware variants), an I2C target, a PS/2 device, a JTAG/SWD
+bit-banger, or a small logic analyzer.
 
 ## Verified today
 
