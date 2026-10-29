@@ -45,7 +45,7 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **15/15 pass** (reset, loader, ALU/memory, waits, UART, SPI modes 0–3, I2C 100/400 kHz, capture, co-simulation) |
+| Cocotb tests | **15/15 pass** (reset, loader, ALU/memory, waits, UART, SPI modes 0–3, I2C master 100/400 kHz, I2C target 100 kHz, capture, co-simulation) |
 | RTL vs ISS | 1,000-cycle randomized lock-step, every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
