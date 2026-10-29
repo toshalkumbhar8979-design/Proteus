@@ -50,5 +50,5 @@ the status column only with evidence; do not tick an item because it is planned.
 - The 48 MHz build failed slow-corner setup. The declared clock is 32 MHz, and
   that build passed post-route timing with +6.10 ns of slow-corner slack.
 - No silicon exists. Timing, power, DRC, and LVS are signoff-tool results on the
-  hardened netlist, and every protocol result is simulation.
-- No silicon, no FPGA run, and no formal verification are claimed.
+  hardened netlist, every protocol result is simulation, and no FPGA run or
+  formal verification is claimed.
