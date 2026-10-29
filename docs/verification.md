@@ -27,8 +27,8 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=17 PASS=17 FAIL=0 SKIP=0
-TOTAL SIM TIME=2,375,540 ns
+TESTS=18 PASS=18 FAIL=0 SKIP=0
+TOTAL SIM TIME=2,417,690 ns
 ```
 
 | Test | Stimulus | What it proves |
@@ -37,6 +37,7 @@ TOTAL SIM TIME=2,375,540 ns
 | `test_loader_readback` | Load `selftest_basic`, read first and last words with command `0x04` | 32-bit frame framing, write port, pipelined MISO readback |
 | `test_selftest_basic` | Run the self-test image | Exact output sequence `55 AA 07 C3 03 04 11 91 90 10 A1`: ALU, direct/indexed memory, bit ops, loop, timer signature |
 | `test_wait_timing` | `WAIT 10`, `WAIT 20` | Edge-to-edge deltas are exactly 11 and 21 clocks, including the instruction after the wait |
+| `test_timer_cosim` | Directed `TMR_CLR`, `TMR_LO`/`TMR_HI`, and two waits past 255 cycles | Timer clear, atomic high-byte latch, increment while running/halted; every clock compared to the ISS |
 | `test_uart_tx` | Run `uart_tx.s`, decode `uo_out[7]` at 417 cycles/bit | 8N1 framing, start/stop bits, LSB-first data `P1\n`, exact baud period |
 | `test_uart_rx` | Drive `ui_in[3]` with an 8N1 `0x5A` frame | Start-bit detection, centre sampling, stop-bit handling, output match |
 | `test_spi_master` | Run `spi_master.s`, sample MOSI on SCK rising | Mode 0, MSB-first `0xA5`, CS framing, done marker |

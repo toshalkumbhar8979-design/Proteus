@@ -90,7 +90,7 @@ hard part of either role.
 The verification story is the part most likely to decide a close competition.
 Proteus-1 uses three independent layers:
 
-1. **Directed cocotb tests through the loader.** Seventeen tests drive real
+1. **Directed cocotb tests through the loader.** Eighteen tests drive real
    frames, real pin waveforms, and real bus models. They check what a scope
    would see, not internal signals.
 2. **Randomized RTL/ISS lock-step.** A generated program containing all twelve
@@ -148,7 +148,7 @@ the author's.
 ## Reproduce it
 
 ```sh
-cd test && make -B                              # 17 RTL tests
+cd test && make -B                              # 18 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh

@@ -209,6 +209,14 @@ the declared 48 MHz clock. Address and data ACKs plus the received `0x42` are
 checked. All 17 tests pass. The target firmware is unchanged; this is a timing
 coverage addition, not a new fixed-function block. The rest of D-013 stands.
 
+### 2026-10-29 — D-015: Directed timer regression; test count now 18
+
+D-014 recorded 17 tests. `test_timer_cosim` runs a directed program that clears
+the 16-bit timer, reads the atomic low/high pair, waits past 255 cycles, and
+reads again. Every enabled clock is compared against the ISS, including the
+timer, latched high byte, wait state, and halt state. All 18 tests pass. This
+closes the timer item in D-007's gate; the rest of D-014 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

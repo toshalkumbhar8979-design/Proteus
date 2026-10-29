@@ -718,6 +718,55 @@ def core_matches_iss(core, iss) -> tuple[bool, str]:
 
 
 @cocotb.test()
+async def test_timer_cosim(dut):
+    """Directed timer program, compared to the ISS every enabled clock."""
+    src = """
+        TMR_CLR
+        TMR_LO
+        OUT UO, A
+        TMR_HI
+        OUT UO, A
+        WAIT 20
+        TMR_LO
+        OUT UO, A
+        TMR_HI
+        OUT UO, A
+        WAIT 255
+        WAIT 20
+        TMR_LO
+        OUT UO, A
+        TMR_HI
+        OUT UO, A
+        HALT
+    """
+    image = assemble(src)
+    await reset_dut(dut)
+    await load_image(dut, image, verify=False, settle=0)
+
+    core = dut.user_project.u_core
+    iss = ProteusISS(image.program, image.data)
+
+    aligned = False
+    for _ in range(16):
+        await RisingEdge(dut.clk)
+        if int(core.pc.value) != 0:
+            iss.step(ui=0x80, uio=0x0C)
+            ok, why = core_matches_iss(core, iss)
+            assert ok, f"timer alignment mismatch: {why}"
+            aligned = True
+            break
+    assert aligned, "core never started the timer program"
+
+    for cycle in range(400):
+        await RisingEdge(dut.clk)
+        iss.step(ui=0x80, uio=0x0C)
+        ok, why = core_matches_iss(core, iss)
+        assert ok, f"timer mismatch at cycle {cycle}: {why}"
+
+    assert iss.timer >= 270, f"timer only reached {iss.timer}"
+
+
+@cocotb.test()
 async def test_random_cosim(dut):
     """Randomized lock-step comparison against the Python ISS."""
     import random

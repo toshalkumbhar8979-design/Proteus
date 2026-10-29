@@ -12,7 +12,7 @@ python3 -m pip install -r requirements.txt
 make -B
 ```
 
-Expected result: `TESTS=17 PASS=17 FAIL=0 SKIP=0`.
+Expected result: `TESTS=18 PASS=18 FAIL=0 SKIP=0`.
 
 ## What is covered
 
@@ -30,6 +30,7 @@ Expected result: `TESTS=17 PASS=17 FAIL=0 SKIP=0`.
 | `test_ps2_device` | PS/2 11-bit device frame, odd parity |
 | `test_capture` | timestamped pin-change FIFO |
 | `test_pin_wait` | level waits on `ui_in` |
+| `test_timer_cosim` | timer clear, atomic latch, wrap past 255 cycles |
 | `test_random_cosim` | 1,000-clock RTL/ISS lock-step |
 
 ## Gate level
