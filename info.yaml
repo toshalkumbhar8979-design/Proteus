@@ -1,0 +1,60 @@
+# Tiny Tapeout project information
+project:
+  title:        "Proteus-1: Field-Reprogrammable Protocol Engine"
+  author:       "Proteus-1 contributors"
+  discord:      ""
+  description:  "A cycle-deterministic 8-bit protocol CPU with pin-wait, open-drain GPIO, a cycle timer, and an 8-entry capture FIFO. UART, SPI, and I2C in firmware; reprogrammable after fabrication."
+  language:     "Verilog"
+  clock_hz:     48000000
+
+  # How many tiles your design occupies? A single tile is about 202x155 uM.
+  tiles: "6x4"
+
+  # Your top module name must start with "tt_um_". Make it unique by including your github username:
+  top_module:  "tt_um_proteus"
+
+  # List your project's source files here.
+  # Source files must be in ./src and you must list each source file separately, one per line.
+  # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
+  source_files:
+    - "tt_um_proteus.v"
+    - "proteus_core.v"
+    - "proteus_loader.v"
+    - "proteus_prog_ram.v"
+    - "proteus_data_ram.v"
+    - "proteus_capture.v"
+
+# The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
+pinout:
+  # Inputs
+  ui[0]: "IN0 / GPIO input"
+  ui[1]: "IN1 / GPIO input"
+  ui[2]: "IN2 / GPIO input"
+  ui[3]: "UART RX (uart_rx.s) / GPIO input"
+  ui[4]: "IN4 / GPIO input"
+  ui[5]: "CFG_MOSI (host loader)"
+  ui[6]: "CFG_SCK (host loader)"
+  ui[7]: "CFG_CS_N (host loader, active low)"
+
+  # Outputs
+  uo[0]: "OUT0 / GPIO output"
+  uo[1]: "OUT1 / GPIO output"
+  uo[2]: "OUT2 / GPIO output"
+  uo[3]: "OUT3 / GPIO output"
+  uo[4]: "GPIO output"
+  uo[5]: "OUT5 / GPIO output"
+  uo[6]: "OUT6 / GPIO output"
+  uo[7]: "CFG_MISO while CS_N low; UART TX (uart_tx.s) in run mode"
+
+  # Bidirectional pins
+  uio[0]: "BIO0 / SPI CS (spi_master.s)"
+  uio[1]: "BIO1 / SPI MOSI (spi_master.s)"
+  uio[2]: "BIO2 / SPI MISO or I2C SCL (spi_master.s, i2c_master.s)"
+  uio[3]: "BIO3 / SPI SCK or I2C SDA (spi_master.s, i2c_master.s)"
+  uio[4]: "BIO4 / GPIO"
+  uio[5]: "BIO5 / GPIO"
+  uio[6]: "BIO6 / GPIO"
+  uio[7]: "BIO7 / GPIO"
+
+# Do not change!
+yaml_version: 6
