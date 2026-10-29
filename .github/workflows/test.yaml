@@ -7,8 +7,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Install yosys
-        run: sudo apt-get update && sudo apt-get install -y yosys
+      # The distro yosys is too old for chformal -lower and the $past handling
+      # used by the proofs, so use the current OSS CAD Suite build instead.
+      - name: Install OSS CAD Suite
+        uses: YosysHQ/setup-oss-cad-suite@v4.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run formal proofs
         run: ./scripts/formal.sh
