@@ -108,6 +108,7 @@ the nominal 6×4 tile area, with no latches and no multiply/divide cells. The
 documented rather than hidden.
 
 The design is hardened, not just synthesized. The Tiny Tapeout GDS action
+([run 40903018243](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/40903018243))
 produced a clean 6×4 SG13CMOS5L layout: 383,307 µm² of placed cells in a
 902,417 µm² core, 0 DRC errors, 0 LVS errors, and a passing precheck. Because
 the first run missed setup at 48 MHz, the clock was re-declared at 32 MHz; that
