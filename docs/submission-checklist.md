@@ -36,9 +36,10 @@ the status column only with evidence; do not tick an item because it is planned.
    documentation together.
 2. If `gds` fails on timing or density, fix the RTL/config and rerun; never
    lower the declared clock alone.
-3. Enable GitHub Pages in the repository settings if the layout `viewer` job is
-   wanted. Its failure is a Pages configuration error (HTTP 404), not a design
-   failure, and no other job depends on it.
+3. Pages is enabled with the `workflow` build type, so the layout `viewer` job
+   deploys to `https://toshalkumbhar8979-design.github.io/Proteus/`. If that job
+   ever reports HTTP 404 from the Pages API, check Settings → Pages first; it is
+   configuration, not a design failure.
 4. Record the final passing run URL in the README and the competition write-up.
 5. Submit the repository link through the official form.
 

@@ -162,6 +162,7 @@ scripts/   synthesis and program-build helpers
 - [Verification report](docs/verification.md) — what each test proves, and what it does not
 - [Competition write-up](docs/competition.md) — design rationale, novelty, AI-use disclosure
 - [Submission checklist](docs/submission-checklist.md) — every competition requirement and its evidence
+- [Layout viewer](https://toshalkumbhar8979-design.github.io/Proteus/) — interactive 3D view of the hardened GDS
 
 ## Status and limitations
 

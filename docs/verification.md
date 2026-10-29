@@ -119,9 +119,11 @@ the 6.25 ns the retime predicted. Area is not the constraint: of the 902,417 µm
 core, only 383,307 µm² is standard-cell logic, and the rest is fill, decap, and
 the pad ring.
 
-Every job that gates the chip passed: `gds`, `precheck`, and `gl_test`. Only
-the optional Pages `viewer` job failed, and its log shows GitHub Pages is not
-enabled for the repository (HTTP 404 on deployment), not a design error.
+Every job passed: `gds`, `precheck`, `gl_test`, and the optional Pages `viewer`.
+The viewer first failed with HTTP 404 because GitHub Pages had never been
+enabled for the repository; after enabling Pages with the `workflow` build type
+and re-running that job, the run is fully green and the layout viewer is served
+at `https://toshalkumbhar8979-design.github.io/Proteus/`.
 
 ### Gate-level tests
 

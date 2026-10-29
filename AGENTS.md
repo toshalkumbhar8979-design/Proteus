@@ -287,6 +287,21 @@ This confirms A-002: 6x4 is the final allocation. 8x4 would add area, not pins,
 protocols, or ISA capability, and the hardened 6x4 core uses 383,307 um^2 of
 logic. Revisit only if a future feature cannot fit.
 
+### 2026-10-30 — D-020: Pages enabled; the viewer job is green too
+
+D-019 recorded the optional Pages `viewer` job as failing with HTTP 404. The
+cause was that Pages had never been enabled for the repository. It is now
+enabled with `build_type: workflow`, and re-running the viewer job on run
+40903018243 made that run fully green: `gds`, `precheck`, `gl_test`, and
+`viewer` all succeeded, and the layout viewer is served at
+`https://toshalkumbhar8979-design.github.io/Proteus/`.
+
+This supersedes only the viewer-failure sentences in D-019. Everything else in
+D-019, including the signoff numbers, stands. Note that every push runs the full
+GDS flow again, roughly 2h45 of runner time, so unrelated pushes should be
+batched; cancelling a superseded run is safe because the artifacts are rebuilt
+from the same commit.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use
