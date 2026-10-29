@@ -46,6 +46,21 @@ the status column only with evidence; do not tick an item because it is planned.
 4. Record the final passing run URL in the README and the competition write-up.
 5. Submit the repository link through the official form.
 
+## Bottom line
+
+Ready to hand over, not yet handed in. The chip, toolchain, tests, timing
+signoff, and documentation are complete and green; what is missing is the
+submission form itself, which Jane Street has not opened yet.
+
+If there is one more push before January, the highest-value additions, in order:
+
+1. A short capture/replay demo video — the cheapest way to make the chip
+   legible to a human judge.
+2. JTAG or SWD firmware — protocol breadth that is cheap on this ISA, and a
+   demonstrated second use of the pin-wait and open-drain features.
+3. A return-stack formal property — closes the one piece of architectural state
+   that currently relies on simulation alone.
+
 ## Claims to keep honest
 
 - The local 257,363 µm² number is a synthesis estimate; the hardened numbers

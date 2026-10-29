@@ -177,7 +177,12 @@ post-route setup at 48 MHz; the design was retimed to 32 MHz and the rerun
 **passed**, with +6.10 ns of slow-corner setup slack and zero violating paths.
 Both the GDS and gate-level jobs are green in CI. See
 [`docs/verification.md`](docs/verification.md) for the exact numbers and the
-honest list of unproven items.
+honest list of unproven items, and the
+[submission checklist](docs/submission-checklist.md#bottom-line) for what is
+still open.
+
+In short: **ready to hand over, not yet handed in.** The design is complete and
+green; the competition's submission form has not been opened yet.
 
 ## Competition context
 
