@@ -174,6 +174,15 @@ The declared clock is **48 MHz**. That is a target, not a measured post-route
 result; the Tiny Tapeout GDS action has the final say. The UART examples use
 417 cycles per bit, which is 115.2 kbaud at 48 MHz with 0.08% error.
 
+### 2026-10-29 — D-011: SPI modes 0–3 verified; test count now 14
+
+D-010 recorded 13 tests and SPI mode 0 only. The master examples now cover
+CPOL=0 (`spi_master.s`) and CPOL=1 (`spi_master_cpol1.s`), and
+`test_spi_other_modes` checks the three remaining sampling conventions against a
+mode-aware cocotb receiver. All 14 tests pass. The SPI target remains mode 0
+only. This supersedes the test count and SPI-coverage sentence in D-010; the
+rest of D-010 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

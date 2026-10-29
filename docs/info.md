@@ -70,10 +70,11 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
 2. For UART, connect `uo_out[7]` to a 3.3 V USB-UART adapter's RX at 115200
    8N1 and load `programs/uart_tx.s`. The chip prints `P1\n`.
 3. For SPI, connect the Pmod pins to a SPI target and load
-   `programs/spi_master.s`; it sends `0xA5` in mode 0.
+   `programs/spi_master.s` (CPOL=0) or `programs/spi_master_cpol1.s` (CPOL=1).
+   Both send `0xA5`; the receiver's CPHA setting chooses the sampling edge.
 4. For I2C, add 4.7k pull-ups from `uio[2]`/`uio[3]` to 3.3 V and load
    `programs/i2c_master.s` or `programs/i2c_target.s`.
-5. Rebuild and rerun the simulation with `cd test && make -B`; all 13 tests
+5. Rebuild and rerun the simulation with `cd test && make -B`; all 14 tests
    should pass.
 
 On power-up the program memory is undefined, so the chip does nothing until the

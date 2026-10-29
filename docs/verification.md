@@ -27,8 +27,8 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=13 PASS=13 FAIL=0 SKIP=0
-TOTAL SIM TIME=1,305,130 ns
+TESTS=14 PASS=14 FAIL=0 SKIP=0
+TOTAL SIM TIME=1,486,750 ns
 ```
 
 | Test | Stimulus | What it proves |
@@ -40,6 +40,7 @@ TOTAL SIM TIME=1,305,130 ns
 | `test_uart_tx` | Run `uart_tx.s`, decode `uo_out[7]` at 417 cycles/bit | 8N1 framing, start/stop bits, LSB-first data `P1\n`, exact baud period |
 | `test_uart_rx` | Drive `ui_in[3]` with an 8N1 `0x5A` frame | Start-bit detection, centre sampling, stop-bit handling, output match |
 | `test_spi_master` | Run `spi_master.s`, sample MOSI on SCK rising | Mode 0, MSB-first `0xA5`, CS framing, done marker |
+| `test_spi_other_modes` | Reload CPOL=0 and CPOL=1 images, sample on the CPHA edge | Modes 1–3: `0xA5` recovered on the falling/rising sampling edges |
 | `test_spi_target` | Drive `ui_in` as an SPI controller, shift `0xA5` | Target-role sampling and receive path |
 | `test_i2c_master` | Run `i2c_master.s` against a cocotb target model | START, address `0x50`, data `0x42`, ACK sampling, STOP |
 | `test_i2c_target` | Run `i2c_target.s` against a cocotb controller model | Address match, ACK, received byte `0x42`, open-drain bus behaviour |
@@ -97,8 +98,8 @@ These are the honest gaps. They are not covered by the numbers above.
 - **No silicon.** All protocol results are RTL simulation.
 - **No FPGA run.** The repository keeps the template FPGA workflow, but it was
   not run for this baseline.
-- **SPI is verified in mode 0 only.** Modes 1–3 are firmware changes (clock
-  polarity/phase and sampling edge), not RTL features, but they are untested.
+- **The SPI target is verified in mode 0 only.** The SPI master covers modes
+  0–3; target-role CPOL/CPHA variants are firmware changes and are not tested.
 - **I2C is verified at roughly 100 kHz.** 400 kHz is a firmware timing change;
   the RTL has no I2C-specific logic to fail, but no 400 kHz test was run.
 - **No formal verification.** The loader FSM and return stack are tested by

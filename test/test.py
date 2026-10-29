@@ -245,8 +245,14 @@ async def test_uart_tx(dut):
     assert got == [0x50, 0x31, 0x0A], f"UART decoded {[hex(x) for x in got]}"
 
 
-async def spi_slave_receive(dut, nbits: int = 8, limit: int = 20000) -> int:
-    """Wait for CS low, sample MOSI on SCK rising edges, return MSB-first byte."""
+async def spi_slave_receive(dut, nbits: int = 8, cpol: int = 0, cpha: int = 0,
+                            limit: int = 20000) -> int:
+    """Wait for CS low and sample MOSI on the mode's sample edge.
+
+    CPHA=0 samples the first clock edge, CPHA=1 samples the second. The first
+    edge is rising when CPOL=0 and falling when CPOL=1, so the sample edge is
+    rising exactly when CPOL == CPHA.
+    """
     for _ in range(limit):
         await RisingEdge(dut.clk)
         if (int(dut.uio_oe.value) & 0x01) and ((int(dut.uio_out.value) & 0x01) == 0):
@@ -256,12 +262,14 @@ async def spi_slave_receive(dut, nbits: int = 8, limit: int = 20000) -> int:
 
     value = 0
     count = 0
+    sample_rising = cpol == cpha
     last_sck = (int(dut.uio_out.value) >> 3) & 1
     for _ in range(limit):
         await RisingEdge(dut.clk)
         uio = int(dut.uio_out.value)
         sck = (uio >> 3) & 1
-        if sck and not last_sck:
+        edge = (sck and not last_sck) if sample_rising else (last_sck and not sck)
+        if edge:
             value = (value << 1) | ((uio >> 1) & 1)
             count += 1
             if count == nbits:
@@ -310,6 +318,29 @@ async def test_spi_master(dut):
     assert got == 0xA5, f"SPI received 0x{got:02X}"
     await ClockCycles(dut.clk, 4)
     assert int(dut.uo_out.value) == 0x5A, f"done marker 0x{int(dut.uo_out.value):02X}"
+
+
+@cocotb.test()
+async def test_spi_other_modes(dut):
+    """SPI modes 1-3: the same data waveform, three other sampling edges."""
+    cases = [
+        ("spi_master.s", 0, 1),
+        ("spi_master_cpol1.s", 1, 0),
+        ("spi_master_cpol1.s", 1, 1),
+    ]
+    for name, cpol, cpha in cases:
+        await reset_dut(dut)
+        image = load_source(name)
+        await load_image(dut, image)
+        got = await spi_slave_receive(dut, 8, cpol=cpol, cpha=cpha)
+        assert got == 0xA5, (
+            f"SPI mode CPOL={cpol} CPHA={cpha} received 0x{got:02X}"
+        )
+        await ClockCycles(dut.clk, 4)
+        assert int(dut.uo_out.value) == 0x5A, (
+            f"mode CPOL={cpol} CPHA={cpha} done marker "
+            f"0x{int(dut.uo_out.value):02X}"
+        )
 
 
 async def i2c_target_model(dut, expected_addr: int = 0x50, expected_data: int = 0x42):

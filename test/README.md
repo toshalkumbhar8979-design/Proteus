@@ -12,7 +12,7 @@ python3 -m pip install -r requirements.txt
 make -B
 ```
 
-Expected result: `TESTS=13 PASS=13 FAIL=0 SKIP=0`.
+Expected result: `TESTS=14 PASS=14 FAIL=0 SKIP=0`.
 
 ## What is covered
 
@@ -23,7 +23,8 @@ Expected result: `TESTS=13 PASS=13 FAIL=0 SKIP=0`.
 | `test_selftest_basic` | ALU, flags, memory, bit ops, timer signature |
 | `test_wait_timing` | exact `WAIT` cycle deltas |
 | `test_uart_tx` / `test_uart_rx` | 8N1 at 417 cycles/bit, both directions |
-| `test_spi_master` / `test_spi_target` | SPI mode 0, both roles |
+| `test_spi_master` / `test_spi_other_modes` | SPI master modes 0–3 |
+| `test_spi_target` | SPI target role, mode 0 |
 | `test_i2c_master` / `test_i2c_target` | open-drain I2C, both roles |
 | `test_capture` | timestamped pin-change FIFO |
 | `test_pin_wait` | level waits on `ui_in` |
