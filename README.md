@@ -153,6 +153,7 @@ scripts/   synthesis and program-build helpers
 - [Datasheet](docs/info.md) — pinout, loader frames, bring-up steps
 - [Verification report](docs/verification.md) — what each test proves, and what it does not
 - [Competition write-up](docs/competition.md) — design rationale, novelty, AI-use disclosure
+- [Submission checklist](docs/submission-checklist.md) — every competition requirement and its evidence
 
 ## Status and limitations
 
