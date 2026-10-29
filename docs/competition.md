@@ -90,13 +90,14 @@ hard part of either role.
 The verification story is the part most likely to decide a close competition.
 Proteus-1 uses three independent layers:
 
-1. **Directed cocotb tests through the loader.** Nineteen tests drive real
+1. **Directed cocotb tests through the loader.** Twenty tests drive real
    frames, real pin waveforms, and real bus models. They check what a scope
    would see, not internal signals.
-2. **Randomized RTL/ISS lock-step.** A generated program containing all twelve
-   opcode classes runs for 1,000 enabled clocks. After every clock, every
-   architectural register must match the Python model. A mismatch prints the
-   instruction, PC, and the first differing state.
+2. **Exhaustive and randomized RTL/ISS lock-step.** Every opcode/subop pair in
+   the 12 x 8 encoding space runs on both models for 30 clocks, then a generated
+   program containing all twelve opcode classes runs for 1,000 enabled clocks.
+   After every clock, every architectural register must match the Python model.
+   A mismatch prints the instruction, PC, and the first differing state.
 3. **Toolchain unit tests.** Seven tests cover all 96 encodings, every mnemonic,
    directives, assembler errors, ISS arithmetic, exact `WAIT` semantics, and
    stack behaviour.
@@ -148,7 +149,7 @@ the author's.
 ## Reproduce it
 
 ```sh
-cd test && make -B                              # 19 RTL tests
+cd test && make -B                              # 20 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh

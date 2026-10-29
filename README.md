@@ -45,8 +45,8 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **19/19 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, capture + overflow, co-simulation) |
-| RTL vs ISS | 1,000-cycle randomized lock-step, every architecturally visible register compared |
+| Cocotb tests | **20/20 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, capture + overflow, opcode sweep, co-simulation) |
+| RTL vs ISS | all 96 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
 | Latches / multiply / divide | none (`check -assert` passes) |
@@ -118,7 +118,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 19 tests
+# RTL simulation: 20 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B

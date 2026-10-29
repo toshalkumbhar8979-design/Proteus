@@ -225,6 +225,17 @@ checks that `CAP_STATUS` returns full with count 8, so the drop path is now a
 tested guarantee rather than an implementation detail. All 19 tests pass. The
 rest of D-015 stands.
 
+### 2026-10-29 — D-017: Exhaustive opcode sweep; test count now 20
+
+D-016 recorded 19 tests. `test_opcode_sweep` runs all 96 opcode/subop
+encodings through the RTL and the Python ISS with the same preamble and compares
+every architectural register for 30 clocks after alignment. This covers the
+subops ISA v1 leaves unused as well as the documented ones. All 20 tests pass.
+The sweep adds about 73 s of wall time because each encoding reloads the
+program memory through the real loader; it is kept because it turns the
+"assembler round-trips every encoding" claim into "every encoding executes
+identically." The rest of D-016 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

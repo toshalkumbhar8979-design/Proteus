@@ -19,7 +19,8 @@ Proteus-1 is verified at three levels:
    without a simulator, so a broken tool cannot hide behind a passing RTL test.
 
 The randomized program is generated from the ISA encoder, not from hand-written
-hex, and contains all twelve opcode classes.
+hex, and contains all twelve opcode classes. The opcode sweep is exhaustive over
+the 12 x 8 encoding space, including subops that ISA v1 leaves unused.
 
 ## 2. Results
 
@@ -27,8 +28,8 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=19 PASS=19 FAIL=0 SKIP=0
-TOTAL SIM TIME=2,440,210 ns
+TESTS=20 PASS=20 FAIL=0 SKIP=0
+TOTAL SIM TIME=4,019,410 ns
 ```
 
 | Test | Stimulus | What it proves |
@@ -51,6 +52,7 @@ TOTAL SIM TIME=2,440,210 ns
 | `test_capture` | Toggle pins with `CAP_EN=1`, drain with `CAP_POP` | Edge detection, timestamped entries, FIFO count/empty status, data ordering |
 | `test_capture_overflow` | Ten pin changes into the eight-entry FIFO | Full flag set, count saturates at 8, extra events dropped |
 | `test_pin_wait` | `WAIT_PIN0/1` on `ui_in[0]` | Level-sensitive stall and release, no missed edge |
+| `test_opcode_sweep` | Every opcode/subop pair, fixed preamble, 30-cycle window | All 96 encodings execute identically on RTL and ISS |
 | `test_random_cosim` | 48-instruction random program, 1,000 enabled clocks | Full architectural lock-step against the ISS after every clock |
 
 The protocol tests use real timing relationships: UART at 417 cycles/bit, SPI

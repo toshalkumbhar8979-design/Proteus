@@ -794,6 +794,52 @@ async def test_timer_cosim(dut):
 
 
 @cocotb.test()
+async def test_opcode_sweep(dut):
+    """Run every opcode/subop encoding and compare RTL to the ISS."""
+    nop = isa.encode(isa.OP_MISC, 0, 0)
+    for op in range(12):
+        for sub in range(8):
+            image = Image()
+            image.program = {
+                0: nop,
+                1: isa.encode(isa.OP_LOAD, 0, 0xA5),
+                2: isa.encode(isa.OP_LOAD, 1, 0x3C),
+                3: isa.encode(isa.OP_LOAD, 2, 0x81),
+                4: isa.encode(op, sub, 0x05),
+                5: isa.encode(isa.OP_TIME, 7, 0),  # HALT
+            }
+            image.max_program = 6
+            image.max_data = 0
+
+            await reset_dut(dut)
+            await load_image(dut, image, verify=False, settle=0)
+
+            core = dut.user_project.u_core
+            iss = ProteusISS(image.program, image.data)
+            aligned = False
+            for _ in range(16):
+                await RisingEdge(dut.clk)
+                if int(core.pc.value) != 0:
+                    iss.step(ui=0x80, uio=0x0C)
+                    ok, why = core_matches_iss(core, iss)
+                    assert ok, f"opcode {op}/{sub} alignment: {why}"
+                    aligned = True
+                    break
+            assert aligned, f"opcode {op}/{sub} never started"
+
+            for cycle in range(30):
+                await RisingEdge(dut.clk)
+                iss.step(ui=0x80, uio=0x0C)
+                ok, why = core_matches_iss(core, iss)
+                if not ok:
+                    dut._log.error(
+                        "opcode op=%d sub=%d instr=0x%04X cycle=%d: %s",
+                        op, sub, isa.encode(op, sub, 0x05), cycle, why,
+                    )
+                    assert False, f"opcode {op}/{sub}: {why}"
+
+
+@cocotb.test()
 async def test_random_cosim(dut):
     """Randomized lock-step comparison against the Python ISS."""
     import random
