@@ -447,6 +447,33 @@ async def i2c_target_model(dut, expected_addr: int = 0x50, expected_data: int = 
 
 
 @cocotb.test()
+async def test_capture_overflow(dut):
+    """More than eight pin changes must assert full and drop new entries."""
+    src = """
+        CAP_EN 1
+        WAIT_PIN1 UI, 0x02
+        CAP_STATUS
+        OUT UO, A
+        HALT
+    """
+    image = assemble(src)
+    await reset_dut(dut)
+    await load_image(dut, image)
+    await ClockCycles(dut.clk, 5)
+
+    # Ten toggles of ui[0] fill the eight-entry FIFO; the ninth and tenth are
+    # dropped. Then ui[1] releases the firmware to read the status byte.
+    for i in range(10):
+        dut.ui_in.value = ui_word(1, 0, 0, low=(0x01 if i % 2 == 0 else 0x00))
+        await ClockCycles(dut.clk, 3)
+    dut.ui_in.value = ui_word(1, 0, 0, low=0x02)
+
+    await wait_for_uo(dut, 0x88, limit=5000)
+    status = int(dut.uo_out.value)
+    assert status == 0x88, f"capture status 0x{status:02X}, expected full+8"
+
+
+@cocotb.test()
 async def test_capture(dut):
     await reset_dut(dut)
     image = load_source("capture_demo.s")

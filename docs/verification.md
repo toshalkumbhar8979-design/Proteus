@@ -27,8 +27,8 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=18 PASS=18 FAIL=0 SKIP=0
-TOTAL SIM TIME=2,417,690 ns
+TESTS=19 PASS=19 FAIL=0 SKIP=0
+TOTAL SIM TIME=2,440,210 ns
 ```
 
 | Test | Stimulus | What it proves |
@@ -49,6 +49,7 @@ TOTAL SIM TIME=2,417,690 ns
 | `test_i2c_target` | Run `i2c_target.s` against a cocotb controller model | Address match, ACK, received byte `0x42`, open-drain bus behaviour |
 | `test_i2c_target_400k` | Same target, 120-clock SCL periods | Address/data ACKs and `0x42` at 400 kHz timing |
 | `test_capture` | Toggle pins with `CAP_EN=1`, drain with `CAP_POP` | Edge detection, timestamped entries, FIFO count/empty status, data ordering |
+| `test_capture_overflow` | Ten pin changes into the eight-entry FIFO | Full flag set, count saturates at 8, extra events dropped |
 | `test_pin_wait` | `WAIT_PIN0/1` on `ui_in[0]` | Level-sensitive stall and release, no missed edge |
 | `test_random_cosim` | 48-instruction random program, 1,000 enabled clocks | Full architectural lock-step against the ISS after every clock |
 
@@ -111,8 +112,6 @@ These are the honest gaps. They are not covered by the numbers above.
   directed and random simulation, not by properties or equivalence checking.
 - **Coverage is behavioural, not line/branch coverage.** No coverage tool was
   run, so no percentage is claimed.
-- **The capture FIFO overflow path is exercised by construction but not
-  separately asserted.** The report does not claim a specific overflow test.
 - **The 48 MHz target is not measured.** It is the declared clock in
   `info.yaml`; if hardening misses it, the clock and UART constants must be
   reduced.

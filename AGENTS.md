@@ -217,6 +217,14 @@ reads again. Every enabled clock is compared against the ISS, including the
 timer, latched high byte, wait state, and halt state. All 18 tests pass. This
 closes the timer item in D-007's gate; the rest of D-014 stands.
 
+### 2026-10-29 — D-016: Capture FIFO overflow asserted; test count now 19
+
+D-015 recorded 18 tests and left the capture overflow path unasserted.
+`test_capture_overflow` drives ten pin changes into the eight-entry FIFO and
+checks that `CAP_STATUS` returns full with count 8, so the drop path is now a
+tested guarantee rather than an implementation detail. All 19 tests pass. The
+rest of D-015 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use
