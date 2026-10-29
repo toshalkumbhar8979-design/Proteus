@@ -27,6 +27,9 @@ COMPILE_ARGS += -DSIM
 else
 
 SIM_BUILD = sim_build/gl
+# test.py skips the three white-box co-simulation tests when this is set,
+# because the flattened netlist has no named core registers.
+export GATES
 COMPILE_ARGS += -DGL_TEST
 COMPILE_ARGS += -DFUNCTIONAL
 COMPILE_ARGS += -DSIM

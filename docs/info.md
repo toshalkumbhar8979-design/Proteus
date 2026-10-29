@@ -33,7 +33,8 @@ diagram. New protocols are firmware loaded after fabrication.
 | `uo_out[6:0]` | 0 | GPIO outputs |
 | `uio[7:0]` | high impedance | GPIO, open-drain capable |
 
-The default example firmware uses `uo_out[7]` for UART TX at 115200 8N1,
+The default example firmware uses `uo_out[7]` for UART TX at 76.8 kbaud 8N1
+(32 MHz clock, 417 cycles per bit),
 `ui_in[3]` for UART RX, and the standard Tiny Tapeout Pmod pinout for SPI
 (`uio[0]` CS, `uio[1]` MOSI, `uio[2]` MISO, `uio[3]` SCK) and I2C
 (`uio[2]` SCL, `uio[3]` SDA).
@@ -56,8 +57,8 @@ The loader is an SPI mode-0 target. A frame is 32 bits, MSB first:
 
 `0x04` is pipelined: the next 32-bit frame shifts the latched word out on
 `CFG_MISO` during its first 16 rising edges. The CPU is held in reset while
-`run=0` and held (not reset) while `CS_N` is low. `SCK` must be at most `clk/4`;
-the reference host runs at 100 kHz, far below that.
+`run=0` and held (not reset) while `CS_N` is low. `SCK` must be at most `clk/4` (8 MHz at the
+32 MHz clock); the reference host runs at 100 kHz, far below that.
 
 The loader pins are synchronized with two flip-flops. The protocol pins
 (`ui_in`, `uio`) are deliberately **not** synchronized: the CPU samples the
@@ -67,7 +68,7 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
 
 1. Load a program image with the MicroPython host script in `host/` or any
    SPI host that speaks the frame format above.
-2. For UART, connect `uo_out[7]` to a 3.3 V USB-UART adapter's RX at 115200
+2. For UART, connect `uo_out[7]` to a 3.3 V USB-UART adapter's RX at 76800
    8N1 and load `programs/uart_tx.s`. The chip prints `P1\n`.
 3. For SPI, connect the Pmod pins to a SPI target and load
    `programs/spi_master.s` (CPOL=0) or `programs/spi_master_cpol1.s` (CPOL=1).

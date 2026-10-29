@@ -1,6 +1,6 @@
-; Proteus-1 UART transmitter, 8N1, 115200 baud at 48 MHz.
+; Proteus-1 UART transmitter, 8N1, 76.8 kbaud at 32 MHz.
 ;
-; 48 MHz / 115200 = 416.67 clocks per bit. BIT_CYCLES is rounded to 417
+; 32 MHz / 76800 = 416.67 clocks per bit. BIT_CYCLES is rounded to 417
 ; (0.08% error, well inside the 2-3% a real UART tolerates). The bit period is
 ; kept exact by accounting for the two instructions around each WAIT:
 ;

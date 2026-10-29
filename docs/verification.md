@@ -45,10 +45,10 @@ TOTAL SIM TIME=4,019,410 ns
 | `test_spi_other_modes` | Reload CPOL=0 and CPOL=1 images, sample on the CPHA edge | Modes 1–3: `0xA5` recovered on the falling/rising sampling edges |
 | `test_spi_target` | Drive `ui_in` as an SPI controller, shift `0xA5` | Target-role sampling and receive path |
 | `test_i2c_master` | Run `i2c_master.s` against a cocotb target model | START, address `0x50`, data `0x42`, ACK sampling, STOP |
-| `test_i2c_master_400k` | Run `i2c_master_400k.s`, measure SCL rising-to-rising periods | Same exchange at ~400 kHz; every measured bit period is 110–130 clocks (396 kHz at 48 MHz) |
+| `test_i2c_master_400k` | Run `i2c_master_400k.s`, measure SCL rising-to-rising periods | Same exchange at ~400 kHz; every measured bit period is 80–84 clocks (381–400 kHz at 32 MHz) |
 | `test_ps2_device` | Run `ps2_device.s`, decode DATA on CLK falling edges | Start, eight LSB-first data bits, odd parity, stop; data `0x5A` |
 | `test_i2c_target` | Run `i2c_target.s` against a cocotb controller model | Address match, ACK, received byte `0x42`, open-drain bus behaviour |
-| `test_i2c_target_400k` | Same target, 120-clock SCL periods | Address/data ACKs and `0x42` at 400 kHz timing |
+| `test_i2c_target_400k` | Same target, 80-clock SCL periods | Address/data ACKs and `0x42` at 400 kHz timing |
 | `test_capture` | Toggle pins with `CAP_EN=1`, drain with `CAP_POP` | Edge detection, timestamped entries, FIFO count/empty status, data ordering |
 | `test_capture_overflow` | Ten pin changes into the eight-entry FIFO | Full flag set, count saturates at 8, extra events dropped |
 | `test_pin_wait` | `WAIT_PIN0/1` on `ui_in[0]` | Level-sensitive stall and release, no missed edge |
@@ -114,9 +114,15 @@ These are the honest gaps. They are not covered by the numbers above.
   directed and random simulation, not by properties or equivalence checking.
 - **Coverage is behavioural, not line/branch coverage.** No coverage tool was
   run, so no percentage is claimed.
-- **The 48 MHz target is not measured.** It is the declared clock in
-  `info.yaml`; if hardening misses it, the clock and UART constants must be
-  reduced.
+- **The 48 MHz target was not met.** The first hardened run completed routing,
+  DRC, LVS, and antenna checks, then failed post-route setup at the slow corner:
+  WNS -4.1715 ns over 346 paths, with a 25.0 ns critical path. The design is
+  re-declared at 32 MHz (31.25 ns), which leaves 6.25 ns of slow-corner margin.
+  The GDS rerun is the authority; no post-route pass at 32 MHz is claimed yet.
+- **Three co-simulation tests are RTL-only.** `test_timer_cosim`,
+  `test_opcode_sweep`, and `test_random_cosim` read named core registers, which
+  the flattened gate-level netlist does not preserve. They are skipped when
+  `GATES=yes`; the other 17 pin-level tests exercise the netlist.
 
 ## 5. Reproducing
 

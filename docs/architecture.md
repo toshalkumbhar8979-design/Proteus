@@ -180,16 +180,20 @@ version if the 8x4 template becomes the target.
 
 ## 7. Timing and clocking
 
-Target: **48 MHz** (20.83 ns). The UART examples use 417 cycles/bit, which is
-115.2 kbaud with 0.08% error. `i2c_master.s` uses `WAIT 200` for roughly
-100 kHz, and `i2c_master_400k.s` uses `WAIT 57` for roughly 400 kHz. SPI
-master uses a slower, branchy bit loop for easy probing; the target role samples
-on `SCK` and can be sped up by shortening the waits.
+Target: **32 MHz** (31.25 ns). The first hardened run at 48 MHz passed DRC,
+LVS, and antenna checks but missed the slow-corner setup constraint by 4.17 ns
+over 346 paths; the critical path needs 25.0 ns. At 32 MHz the same path has
+6.25 ns of margin. The UART examples keep 417 cycles/bit, which is 76.8 kbaud
+with 0.08% error. `i2c_master.s` uses `WAIT 156` for roughly 100 kHz, and
+`i2c_master_400k.s` uses `WAIT 38` for roughly 386 kHz. `ps2_device.s` uses
+`WAIT 167` to stay near 10.5 kHz. SPI master uses a slower, branchy bit loop for
+easy probing; the target role samples on `SCK` and can be sped up by shortening
+the waits.
 
 The local Yosys/ABC area run does not include place-and-route parasitics. The
 Tiny Tapeout GDS action is the authority for the final timing and precheck.
-`info.yaml` declares 48 MHz; if the hardened design misses it, reduce the
-declared clock and rerun the protocol timing constants.
+`src/config.json` and `info.yaml` declare 31.25 ns / 32 MHz; do not raise the
+clock without a new hardened timing run and a fresh protocol-rate check.
 
 ## 8. Risks and limitations
 

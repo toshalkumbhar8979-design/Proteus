@@ -9,6 +9,7 @@ the same path the RP2350 host uses on the demo board.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -25,6 +26,12 @@ from proteus_iss import ProteusISS  # noqa: E402
 
 CLK_NS = 10                  # 100 MHz simulation clock
 SPI_HALF = 4                 # SCK half-period in clocks (<= clk/4 requirement)
+
+# The hardened netlist is flattened, so the three white-box tests that read
+# core registers cannot run against it. They stay enabled for every RTL run;
+# the gate-level run executes the pin-level tests instead. test/Makefile
+# exports GATES=yes for the gate-level branch.
+GATE_LEVEL = os.environ.get("GATES", "").lower() == "yes"
 
 CS_BIT = 7
 SCK_BIT = 6
@@ -561,11 +568,11 @@ async def test_i2c_master_400k(dut):
     periods = await monitor
     await target
 
-    # At 48 MHz, 400 kHz is 120 clocks per SCL period. The firmware targets
-    # 121; allow 110-130 for the instruction path and the ACK stretch.
-    bit_periods = [p for p in periods if 100 <= p <= 140]
+    # At 32 MHz, 400 kHz is 80 clocks per SCL period. The firmware targets
+    # 83; allow 80-84 for the instruction path and the ACK stretch.
+    bit_periods = [p for p in periods if 76 <= p <= 86]
     assert len(bit_periods) >= 8, f"too few SCL periods: {periods}"
-    assert all(110 <= p <= 130 for p in bit_periods), (
+    assert all(80 <= p <= 84 for p in bit_periods), (
         f"SCL periods outside the 400 kHz window: {periods}"
     )
 
@@ -574,8 +581,8 @@ async def i2c_controller_exchange(dut, scl_half: int = 20) -> tuple[bool, bool]:
     """Drive an I2C write of 0x42 to 0x28 and return the two ACK bits.
 
     scl_half is the SCL high/low time in clocks. The default 20 matches the
-    100 kHz controller model; 60 gives a 120-clock SCL period, which is 400 kHz
-    at the declared 48 MHz clock.
+    100 kHz controller model; 40 gives an 80-clock SCL period, which is 400 kHz
+    at the declared 32 MHz clock.
     """
     dut.sda_pull.value = 0
 
@@ -661,11 +668,11 @@ async def test_i2c_target(dut):
 
 @cocotb.test()
 async def test_i2c_target_400k(dut):
-    """Same target firmware with a 120-clock SCL period (400 kHz at 48 MHz)."""
+    """Same target firmware with an 80-clock SCL period (400 kHz at 32 MHz)."""
     await reset_dut(dut)
     image = load_source("i2c_target.s")
     await load_image(dut, image)
-    ack_addr, ack_data = await i2c_controller_exchange(dut, scl_half=60)
+    ack_addr, ack_data = await i2c_controller_exchange(dut, scl_half=40)
     assert ack_addr, "400 kHz target did not ACK its address"
     assert ack_data, "400 kHz target did not ACK the data byte"
     for _ in range(2000):
@@ -744,9 +751,13 @@ def core_matches_iss(core, iss) -> tuple[bool, str]:
     return True, ""
 
 
-@cocotb.test()
+@cocotb.test(skip=GATE_LEVEL)
 async def test_timer_cosim(dut):
-    """Directed timer program, compared to the ISS every enabled clock."""
+    """Directed timer program, compared to the ISS every enabled clock.
+
+    RTL-only: reads core registers, which a flattened gate-level netlist does
+    not preserve.
+    """
     src = """
         TMR_CLR
         TMR_LO
@@ -793,9 +804,12 @@ async def test_timer_cosim(dut):
     assert iss.timer >= 270, f"timer only reached {iss.timer}"
 
 
-@cocotb.test()
+@cocotb.test(skip=GATE_LEVEL)
 async def test_opcode_sweep(dut):
-    """Run every opcode/subop encoding and compare RTL to the ISS."""
+    """Run every opcode/subop encoding and compare RTL to the ISS.
+
+    RTL-only: the comparison reads architectural registers inside the core.
+    """
     nop = isa.encode(isa.OP_MISC, 0, 0)
     for op in range(12):
         for sub in range(8):
@@ -839,9 +853,12 @@ async def test_opcode_sweep(dut):
                     assert False, f"opcode {op}/{sub}: {why}"
 
 
-@cocotb.test()
+@cocotb.test(skip=GATE_LEVEL)
 async def test_random_cosim(dut):
-    """Randomized lock-step comparison against the Python ISS."""
+    """Randomized lock-step comparison against the Python ISS.
+
+    RTL-only: the comparison reads architectural registers inside the core.
+    """
     import random
 
     rng = random.Random(0xC0DE)

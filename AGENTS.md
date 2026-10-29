@@ -236,6 +236,24 @@ program memory through the real loader; it is kept because it turns the
 "assembler round-trips every encoding" claim into "every encoding executes
 identically." The rest of D-016 stands.
 
+### 2026-10-29 — D-018: Clock reduced to 32 MHz after slow-corner setup failure
+
+The first 6x4 GDS run completed routing, DRC, LVS, and antenna checks, then
+failed post-route setup at 48 MHz. The slow corner (`nom_slow_1p08V_125C`)
+reported WNS **-4.1715 ns**, TNS -115.93 ns, and 346 setup violators; the worst
+path needs **25.0 ns**. The design is re-declared at **32 MHz** (31.25 ns), which
+leaves 6.25 ns of slow-corner margin. `src/config.json` sets `CLOCK_PERIOD` to
+31.25 and `info.yaml` sets `clock_hz` to 32,000,000.
+
+Firmware timing was rescaled to keep the demonstrated real-world rates: UART
+keeps its verified 417 cycles/bit, which is now 76.8 kbaud at 32 MHz with the
+same 0.08% error; I2C 100 kHz uses `WAIT 156`; I2C fast mode uses `WAIT 38`
+(about 386 kHz); PS/2 uses `WAIT 167` (about 10.5 kHz). All 20 RTL tests and all
+7 toolchain tests pass after the change. The GDS rerun is the authority for the
+new timing; no 32 MHz post-route pass is claimed until it completes.
+
+This supersedes the 48 MHz target in D-010. The rest of D-010 stands.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

@@ -8,7 +8,7 @@
 ; Both lines are open-drain with external pull-ups. The device sends one 11-bit
 ; frame: start 0, eight data bits LSB first, odd parity, stop 1. Data changes
 ; while CLK is high and is sampled by the host on the falling edge. The bit
-; period is about 95 us at 48 MHz (WAIT 250 x 9 plus loop overhead), inside the
+; period is about 95 us at 32 MHz (WAIT 167 x 9 plus loop overhead), inside the
 ; 10-16.7 kHz PS/2 clock range.
 
 .equ DATA, 0x01
@@ -92,11 +92,11 @@ sb_ready:
         RET
 
 ; -------------------------------------------------------------------- delay
-; About 47 us at 48 MHz: 9 x (WAIT 250 + DEC + JNZ) plus call overhead.
+; About 47 us at 32 MHz: 9 x (WAIT 167 + DEC + JNZ) plus call overhead.
 delay:
         LDI X, 9
 delay_loop:
-        WAIT 250
+        WAIT 167
         DEC X
         JNZ delay_loop
         RET

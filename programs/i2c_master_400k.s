@@ -9,9 +9,9 @@
 ; required, as with any I2C bus. The firmware writes 0x42 to the 7-bit address
 ; 0x28 (write direction, so the address byte is 0x50).
 ;
-; SCL timing: the bit loop is about 121 clocks from one rising edge to the
-; next (WAIT 57 + WAIT 57 + seven instruction cycles), which is 396.7 kHz at
-; 48 MHz. That is inside the 400 kHz fast-mode limit with margin for the
+; SCL timing: the bit loop is about 83 clocks from one rising edge to the
+; next (WAIT 38 + WAIT 38 + seven instruction cycles), which is 386 kHz at
+; 32 MHz. That is inside the 400 kHz fast-mode limit with margin for the
 ; instruction path. The ACK wait is a pin-level wait, so the target can stretch
 ; by holding SDA low. There is no timeout; a missing target will stall the CPU,
 ; which is intentional for a bring-up demo.
@@ -67,9 +67,9 @@ sda_one:
         SETB UIO, SDA
 sda_ready:
         SETB UIO, SCL            ; release SCL; target samples SDA
-        WAIT 57
+        WAIT 38
         CLRB UIO, SCL            ; pull SCL low
-        WAIT 57
+        WAIT 38
         DEC Y
         JNZ i2c_bit
 

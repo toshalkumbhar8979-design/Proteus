@@ -361,13 +361,13 @@ choices, not silicon constraints; the CPU can read and drive any pin.
 
 | Example | Pins |
 |---|---|
-| `uart_tx.s` | TX on `uo_out[7]` (bit-rotated byte), 8N1, 417 cycles/bit at 48 MHz |
-| `uart_rx.s` | RX on `ui_in[3]`, 8N1, 417 cycles/bit at 48 MHz |
+| `uart_tx.s` | TX on `uo_out[7]` (bit-rotated byte), 8N1, 417 cycles/bit at 32 MHz (76.8 kbaud) |
+| `uart_rx.s` | RX on `ui_in[3]`, 8N1, 417 cycles/bit at 32 MHz (76.8 kbaud) |
 | `spi_master.s` | `uio[0]=CS_N`, `uio[1]=MOSI`, `uio[2]=MISO`, `uio[3]=SCK`; CPOL=0, modes 0–1 |
 | `spi_master_cpol1.s` | same pins; SCK idles high, CPOL=1, modes 2–3 |
 | `spi_target.s` | `ui[0]=CS_N`, `ui[1]=MOSI`, `ui[2]=SCK`; received byte on `uo_out`, mode 0 |
 | `i2c_master.s` | `uio[2]=SCL`, `uio[3]=SDA`, open-drain, external pull-ups, ~100 kHz |
-| `i2c_master_400k.s` | same pins; WAIT 57 bit loop, ~400 kHz at 48 MHz |
+| `i2c_master_400k.s` | same pins; WAIT 38 bit loop, ~386 kHz at 32 MHz |
 | `i2c_target.s` | `uio[2]=SCL`, `uio[3]=SDA`, address 0x28, received byte on `uo_out[6:0]` |
 | `ps2_device.s` | `uio[0]=DATA`, `uio[1]=CLK`, open-drain, 11-bit device frame |
 | `capture_demo.s` | captures `ui_in[1:0]` changes; reports on `uo_out` |

@@ -1,4 +1,4 @@
-; Proteus-1 UART receiver, 8N1, 115200 baud at 48 MHz.
+; Proteus-1 UART receiver, 8N1, 76.8 kbaud at 32 MHz.
 ;
 ; RX is ui_in[3] (the Tiny Tapeout Pmod UART RX pin). The receiver waits for a
 ; low start bit, delays to the centre of data bit 0, then samples every 417

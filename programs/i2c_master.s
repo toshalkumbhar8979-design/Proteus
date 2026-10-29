@@ -9,7 +9,7 @@
 ; required, as with any I2C bus. The firmware writes 0x42 to the 7-bit address
 ; 0x28 (write direction, so the address byte is 0x50).
 ;
-; SCL timing: WAIT 200 gives about 100 kHz at 48 MHz including instruction
+; SCL timing: WAIT 156 gives about 100 kHz at 32 MHz including instruction
 ; overhead. The ACK wait is a pin-level wait, so the target can stretch by
 ; holding SDA low. There is no timeout; a missing target will stall the CPU,
 ; which is intentional for a bring-up demo.
@@ -65,9 +65,9 @@ sda_one:
         SETB UIO, SDA
 sda_ready:
         SETB UIO, SCL            ; release SCL; target samples SDA
-        WAIT 200
+        WAIT 156
         CLRB UIO, SCL            ; pull SCL low
-        WAIT 200
+        WAIT 156
         DEC Y
         JNZ i2c_bit
 

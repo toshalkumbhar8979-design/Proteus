@@ -5,7 +5,7 @@ project:
   discord:      ""
   description:  "A cycle-deterministic 8-bit protocol CPU with pin-wait, open-drain GPIO, a cycle timer, and an 8-entry capture FIFO. UART, SPI, and I2C in firmware; reprogrammable after fabrication."
   language:     "Verilog"
-  clock_hz:     48000000
+  clock_hz:     32000000
 
   # How many tiles your design occupies? A single tile is about 202x155 uM.
   tiles: "6x4"

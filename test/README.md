@@ -1,9 +1,10 @@
 # Proteus-1 RTL tests
 
 The suite uses cocotb 2.x with Icarus Verilog. It drives the chip through its
-real SPI loader and checks the pins, not internal state, except in the
-randomized co-simulation test, which compares every architectural register
-against the Python ISS.
+real SPI loader and checks the pins. Three white-box tests (`test_timer_cosim`,
+`test_opcode_sweep`, and `test_random_cosim`) also compare architectural
+registers against the Python ISS; they are RTL-only because the hardened
+netlist is flattened.
 
 ## Run
 
@@ -12,7 +13,8 @@ python3 -m pip install -r requirements.txt
 make -B
 ```
 
-Expected result: `TESTS=20 PASS=20 FAIL=0 SKIP=0`.
+Expected result: `TESTS=20 PASS=20 FAIL=0 SKIP=0`. Under `GATES=yes` the three
+white-box tests are skipped: `TESTS=20 PASS=17 FAIL=0 SKIP=3`.
 
 ## What is covered
 
@@ -37,8 +39,11 @@ Expected result: `TESTS=20 PASS=20 FAIL=0 SKIP=0`.
 ## Gate level
 
 `make -B GATES=yes` expects `gate_level_netlist.v` in this directory, produced
-by the Tiny Tapeout GDS action. No hardened netlist exists in the repository
-yet, so gate-level simulation has not been run. Do not report it as passing.
+by the Tiny Tapeout GDS action. `GATES=yes` is exported to cocotb, which skips
+the three tests that read core registers; the remaining 17 tests exercise the
+chip only through its pins. The first GDS run failed post-route setup at
+48 MHz, so no gate-level result is claimed yet. Do not report it as passing
+until the rerun's `gl_test` job is green.
 
 ## Waveforms
 

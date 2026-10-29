@@ -69,15 +69,15 @@ All of these run on the RTL through the real loader and are checked by cocotb:
 
 | Protocol | Role | Result |
 |---|---|---|
-| UART 8N1, 115200 at 48 MHz | Transmitter | `P1\n` decoded at 417 cycles/bit |
-| UART 8N1, 115200 at 48 MHz | Receiver | `0x5A` received with centre sampling |
+| UART 8N1, 76.8 kbaud at 32 MHz | Transmitter | `P1\n` decoded at 417 cycles/bit |
+| UART 8N1, 76.8 kbaud at 32 MHz | Receiver | `0x5A` received with centre sampling |
 | SPI modes 0–3, MSB first | Controller | `0xA5` sampled on each mode's edge |
 | SPI mode 0, MSB first | Target | `0xA5` received from a cocotb controller |
 | I2C ~100 kHz, address `0x28` | Controller | START, address, `0x42`, ACK, STOP |
-| I2C ~400 kHz, address `0x28` | Controller | Same exchange; SCL period measured at 110–130 clocks |
+| I2C ~400 kHz, address `0x28` | Controller | Same exchange; SCL period measured at 80–84 clocks |
 | PS/2 device-to-host | Device | 11-bit frame, odd parity, open-drain clock/data, `0x5A` |
 | I2C ~100 kHz, address `0x50` | Target | Address match, ACK, data `0x42` |
-| I2C ~400 kHz, address `0x50` | Target | Same target with 120-clock SCL periods |
+| I2C ~400 kHz, address `0x50` | Target | Same target with 80-clock SCL periods |
 | Capture FIFO | Analyzer | Timestamped pin changes drained in order |
 | Pin waits | Timing | Level and edge stalls released exactly |
 

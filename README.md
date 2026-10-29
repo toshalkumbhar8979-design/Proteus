@@ -51,7 +51,8 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
-| GDS / precheck / post-route timing | run by the Tiny Tapeout GitHub action after push; not yet claimed |
+| GDS / precheck | DRC, LVS, and antenna checks pass; the first run then failed setup timing at 48 MHz |
+| Post-route timing | 48 MHz missed the slow corner by 4.17 ns; retimed to **32 MHz** (31.25 ns), rerun pending |
 
 ## ISA at a glance
 
@@ -101,8 +102,8 @@ because ASIC RAM powers up undefined.
 | Program | Demonstrates |
 |---|---|
 | [`selftest_basic.s`](programs/selftest_basic.s) | ALU, flags, direct/indexed memory, bit ops, timer signature |
-| [`uart_tx.s`](programs/uart_tx.s) | 8N1 transmitter, 115200 baud at 48 MHz, exact 417-cycle bits |
-| [`uart_rx.s`](programs/uart_rx.s) | 8N1 receiver, centre sampling, 115200 baud |
+| [`uart_tx.s`](programs/uart_tx.s) | 8N1 transmitter, 76.8 kbaud at 32 MHz, exact 417-cycle bits |
+| [`uart_rx.s`](programs/uart_rx.s) | 8N1 receiver, centre sampling, 76.8 kbaud |
 | [`spi_master.s`](programs/spi_master.s) | SPI modes 0–1 (CPOL=0), MSB first, `0xA5` |
 | [`spi_master_cpol1.s`](programs/spi_master_cpol1.s) | SPI modes 2–3 (CPOL=1), MSB first, `0xA5` |
 | [`spi_target.s`](programs/spi_target.s) | SPI target role on `ui_in`, mode 0 |
@@ -164,8 +165,9 @@ The RTL, assembler, ISS, and tests are complete for the competition baseline.
 The program memory is 128 words, not 256: synthesis showed the larger memory at
 56% of the nominal tile area before routing, which is not a safe tapeout margin.
 There is no SRAM macro, no interrupt controller, no data-memory readback command,
-and no post-route timing result yet. The GDS action is the authority for timing
-and precheck. See [`docs/verification.md`](docs/verification.md) for the honest
+and the first hardened run passed DRC, LVS, and antenna checks but missed
+post-route setup at 48 MHz. The design is retimed to 32 MHz; the rerun is
+pending. The GDS action remains the authority for timing and precheck. See [`docs/verification.md`](docs/verification.md) for the honest
 list of unproven items.
 
 ## Competition context
