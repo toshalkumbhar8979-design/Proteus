@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+// SPDX-License-Identifier: Apache-2.0
 // Proteus-1 core.
 //
 // A single-cycle 8-bit accumulator CPU built for pin timing. Every ordinary

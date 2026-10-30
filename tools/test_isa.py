@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+# SPDX-License-Identifier: Apache-2.0
 """Unit tests for the Proteus-1 ISA, assembler, disassembler, and ISS."""
 
 from __future__ import annotations

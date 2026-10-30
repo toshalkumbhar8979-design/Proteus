@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+// SPDX-License-Identifier: Apache-2.0
 // Proteus-1 host loader.
 //
 // A small SPI-mode-0 target used to load program words and data bytes, and to

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+// SPDX-License-Identifier: Apache-2.0
 // Proteus-1 program memory.
 //
 // One asynchronous read port (the CPU fetches one instruction per cycle) and

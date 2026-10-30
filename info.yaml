@@ -3,7 +3,7 @@ project:
   title:        "Proteus-1: Field-Reprogrammable Protocol Engine"
   author:       "Toshal Kumbhar"
   discord:      ""
-  description:  "A cycle-deterministic 8-bit protocol CPU with pin-wait, open-drain GPIO, a cycle timer, and an 8-entry capture FIFO. UART, SPI, and I2C in firmware; reprogrammable after fabrication."
+  description:  "A cycle-deterministic 8-bit protocol CPU with pin-wait, open-drain GPIO, a cycle timer, and an 8-entry capture FIFO. UART, SPI, I2C, PS/2, and JTAG in firmware; reprogrammable after fabrication."
   language:     "Verilog"
   clock_hz:     32000000
 

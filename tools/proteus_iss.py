@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+# SPDX-License-Identifier: Apache-2.0
 """Cycle-accurate Proteus-1 instruction-set simulator.
 
 This is the golden model for RTL co-simulation. It models one enabled core

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+// SPDX-License-Identifier: Apache-2.0
 // Proteus-1 capture FIFO.
 //
 // Samples the 16 external pin bits every enabled clock while cap_en=1. When the

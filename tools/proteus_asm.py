@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+# SPDX-License-Identifier: Apache-2.0
 """Proteus-1 assembler.
 
 Two passes:

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Toshal Kumbhar
+// SPDX-License-Identifier: Apache-2.0
 // Proteus-1 data memory: 64 bytes, asynchronous read, synchronous write.
 //
 // The core supplies one read address (direct or indexed) and one write address.
