@@ -251,7 +251,7 @@ cd ..
 python3 -m pytest -q tools/test_isa.py
 
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh
-./scripts/formal.sh        # 5 properties, BMC + induction
+./scripts/formal.sh        # 6 properties, BMC + induction
 ./scripts/synth_fpga.sh    # ECP5 map, place, route, Fmax
 verilator --lint-only -Wall -Wno-fatal --top-module tt_um_proteus -Isrc \
   src/tt_um_proteus.v src/proteus_core.v src/proteus_loader.v \

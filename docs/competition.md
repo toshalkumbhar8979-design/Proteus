@@ -173,7 +173,7 @@ the author's.
 cd test && make -B                              # 21 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
-./scripts/formal.sh                             # 5 proven invariants
+./scripts/formal.sh                             # 6 proven invariants
 ./scripts/synth_fpga.sh                         # ECP5 map, place, route, Fmax
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh
 ```

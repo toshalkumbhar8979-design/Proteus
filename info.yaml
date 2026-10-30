@@ -1,7 +1,7 @@
 # Tiny Tapeout project information
 project:
   title:        "Proteus-1: Field-Reprogrammable Protocol Engine"
-  author:       "Proteus-1 contributors"
+  author:       "Toshal Kumbhar"
   discord:      ""
   description:  "A cycle-deterministic 8-bit protocol CPU with pin-wait, open-drain GPIO, a cycle timer, and an 8-entry capture FIFO. UART, SPI, and I2C in firmware; reprogrammable after fabrication."
   language:     "Verilog"

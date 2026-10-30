@@ -240,7 +240,7 @@ Target: 6×4 tiles, IHP SG13CMOS5L, March 2027 shuttle, deadline 2027-01-18.
 
 ## License
 
-Apache-2.0. See [`LICENSE`](LICENSE).
+© 2026 Toshal Kumbhar. Apache-2.0 — see [`LICENSE`](LICENSE).
 
 Apache-2.0 rather than MIT, deliberately: it carries an express patent grant,
 which matters for a design meant to be built and reused in hardware, and it is
