@@ -57,6 +57,20 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Formal | **6 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs, CALL/RET return stack) |
 | FPGA portability | ECP5 25k: 1,611 LUT4 (6%), 544 FF (2%), **65.9 MHz** against the 32 MHz target — mapped and routed, no board needed |
 
+## The layout
+
+![Proteus-1 layout rendered from the submitted GDS with KLayout: standard-cell
+rows under Metal1 to Metal4, with the Metal4 power straps running the full
+height of the die](docs/images/die.png)
+
+*Rendered by KLayout 0.30 from `tt_um_proteus.gds` in the `tt_submission`
+artifact of the passing GDS run, 1800 px across the 1.29 × 0.71 mm 6×4
+allocation. The dense field is standard-cell logic under Metal1–Metal3, the
+dark vertical bars are the Metal4 power straps, and the pale margins are fill
+cells. The submitted GDS carries the design only — 58 cells, no pad instances —
+so this is the design area, not the assembled chip. Rebuild with `make die`
+after `gh run download -n tt_submission -D build/sub`.*
+
 ## One core, every protocol
 
 There is no UART block, no SPI block, no I2C block. The table below is the same
