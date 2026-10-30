@@ -1,216 +1,187 @@
 % Proteus-1 architecture figure.
 %
 % Build:  tectonic -X compile docs/figures/block_diagram.tex --outdir build/figures
-% The PNG used by the README is rasterised from the resulting PDF at 300 dpi.
+% The PNG used by the README is rasterised from the resulting PDF at 300 dpi
+% (see the `figures` target in the top-level Makefile).
 %
-% Vertical spine, top to bottom:
-%   host loader -> memories -> execute -> pins and capture -> pad ring
+% Drawn as a datasheet schematic, not a poster: white sheet, square boxes with
+% hairline strokes, one weight of black for every net, and short orthogonal
+% stubs in the gutters between columns. Nets that would have to cross a box are
+% not drawn at all; the two memories sit directly above the core port that
+% addresses them, so every connection is a straight run in a gap.
 %
-% Every connection is one straight stub in the gap between two stages, so no
-% wire crosses a card and no two wires cross. The run/reset trunk is the only
-% net that leaves the spine, and it runs in the right margin.
-%
-% Blue  = data path.  Amber = control, enable or write strobe.
-\documentclass[border=8pt]{standalone}
+% Solid  = data path.  Dashed = control, enable or write strobe.
+\documentclass[border=10pt]{standalone}
 
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
+\usepackage[scaled=0.88]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, calc}
 
-\definecolor{bg}{HTML}{F7FAFD}
-\definecolor{card}{HTML}{FFFFFF}
-\definecolor{cardedge}{HTML}{CDD9E6}
-\definecolor{panel}{HTML}{EDF3FA}
-\definecolor{paneledge}{HTML}{C6D8EA}
-\definecolor{ink}{HTML}{1B2A3A}
-\definecolor{body}{HTML}{3C4E62}
-\definecolor{mod}{HTML}{7C90A6}
-\definecolor{hostc}{HTML}{2563EB}
-\definecolor{memc}{HTML}{0E7490}
-\definecolor{exec}{HTML}{6D28D9}
-\definecolor{pinc}{HTML}{C2410C}
-\definecolor{padc}{HTML}{15803D}
-\definecolor{datac}{HTML}{1D4ED8}
-\definecolor{ctrlc}{HTML}{B45309}
+\definecolor{ink}{HTML}{1A1A1A}
+\definecolor{body}{HTML}{3A3A3A}
+\definecolor{quiet}{HTML}{77736E}
+\definecolor{stroke}{HTML}{2B2B2B}
+\definecolor{unitfill}{HTML}{F4F4F1}
+\definecolor{corefill}{HTML}{FFFFFF}
+\definecolor{padfill}{HTML}{FAFAF8}
 
 \tikzset{
-  card/.style={
-    draw=cardedge, fill=card, line width=0.6pt, rounded corners=3pt,
-    text=body, align=left, inner sep=5pt,
-    font=\sffamily\scriptsize\linespread{1.25}\selectfont,
+  unit/.style={
+    draw=stroke, line width=0.5pt, fill=unitfill, align=center,
+    inner sep=2.2pt, text=body,
+    font=\sffamily\fontsize{6.3}{7.4}\selectfont,
   },
-  stage/.style={
-    draw=paneledge, fill=panel, line width=0.7pt, rounded corners=6pt, fill opacity=0.55,
-  },
-  sig/.style={font=\sffamily\scriptsize, text=datac, inner sep=1.6pt},
-  sigc/.style={font=\sffamily\scriptsize, text=ctrlc, inner sep=1.6pt},
-  data/.style={draw=datac, line width=0.85pt, -{Latex[length=1.6mm,width=1.3mm]}},
-  ctl/.style={draw=ctrlc, line width=0.85pt, dashed, dash pattern=on 2.2mm off 1.4mm,
-              -{Latex[length=1.6mm,width=1.3mm]}},
-  pill/.style={rounded corners=2.5pt, text=white, font=\sffamily\tiny\bfseries,
-               inner sep=3.2pt, anchor=west},
+  coreunit/.style={unit, fill=corefill},
+  padunit/.style={unit, fill=padfill},
+  ttl/.style={font=\sffamily\bfseries\fontsize{6.7}{7.8}\selectfont, text=ink},
+  sig/.style={font=\sffamily\fontsize{5.9}{6.9}\selectfont, text=quiet, inner sep=1.5pt},
+  data/.style={draw=ink, line width=0.6pt, -{Stealth[length=1.6mm, width=1.1mm]}},
+  both/.style={draw=ink, line width=0.6pt,
+               {Stealth[length=1.6mm, width=1.1mm]}-{Stealth[length=1.6mm, width=1.1mm]}},
+  ctl/.style={draw=ink, line width=0.5pt, dash pattern=on 1.6mm off 1.1mm,
+              -{Stealth[length=1.6mm, width=1.1mm]}},
+  flow/.style={draw=ink, line width=0.5pt, -{Stealth[length=1.2mm, width=0.9mm]}},
 }
 
-\newcommand{\mod}[1]{\textcolor{mod}{\ttfamily #1}}
-\newcommand{\ttl}[1]{\textcolor{ink}{\sffamily\bfseries #1}}
+% Box title: a switch, so it can be dropped in front of a line of text.
+\def\ttl{\color{ink}\bfseries}
+
+% Bus width tick, drawn across a net.
+\newcommand{\bustick}[1]{\draw[draw=ink, line width=0.5pt] ($(#1)+(-0.05,-0.09)$) -- ($(#1)+(0.05,0.09)$);}
 
 \begin{document}
 \begin{tikzpicture}[x=1cm, y=1cm]
 
-\path[use as bounding box] (0,2.18) rectangle (15.7,22.9);
-\fill[bg] (0,2.18) rectangle (15.7,22.9);
+\path[use as bounding box] (0.45,1.32) rectangle (22.30,13.58);
+\fill[white] (0.45,1.32) rectangle (22.30,13.58);
 
 % ---------------------------------------------------------------------- header
-\node[anchor=north west, font=\sffamily\bfseries\Large, text=ink, inner sep=0pt]
-  at (1.15,22.72) {Proteus-1 hardware};
-\node[anchor=north west, font=\sffamily\scriptsize, text=body, inner sep=0pt]
-  at (1.17,22.22) {one 8-bit core, two memories, 24 pins, 32 MHz};
-\node[anchor=north east, font=\sffamily\tiny, text=mod, inner sep=0pt]
-  at (14.35,22.30) {6x4 SG13CMOS5L};
+\node[anchor=base west, font=\sffamily\fontsize{9}{10}\selectfont, text=ink, inner sep=0pt]
+  at (0.90,13.34) {\bfseries Proteus-1 \textmd{--- core, memories and pin interface}};
+\node[anchor=base east, font=\sffamily\fontsize{6.3}{7.4}\selectfont, text=quiet, inner sep=0pt]
+  at (22.00,13.34) {6 $\times$ 4 SG13CMOS5L \textperiodcentered{} 32 MHz \textperiodcentered{} single clock domain};
 
-\draw[draw=datac, line width=0.85pt, -{Latex[length=1.6mm,width=1.3mm]}] (1.15,21.80) -- (1.95,21.80);
-\node[sig, anchor=west] at (2.05,21.80) {data};
-\draw[ctl] (3.55,21.80) -- (4.35,21.80);
-\node[sigc, anchor=west] at (4.45,21.80) {control / enable / write};
+% =========================================================== host loader (left)
+\node[unit, minimum width=3.30cm, minimum height=1.95cm, text width=3.00cm] (loader) at (2.55,7.02)
+  {{\ttl CFG SPI TARGET}\\[1pt]
+   {\textcolor{quiet}{host loader}}\\[2.5pt]
+   32-bit frame\\
+   \{cmd, addr, d[15:0]\}\\[1pt]
+   {\textcolor{quiet}{MISO readback}}};
 
-% ============================================================= stage 1: the host
-\node[pill, fill=hostc] at (1.15,21.42) {HOST};
-\draw[stage] (1.15,19.95) rectangle (14.35,21.25);
+% ======================================================= memories (above core)
+\node[unit, minimum width=4.00cm, minimum height=1.60cm, text width=3.70cm] (prog) at (7.00,11.25)
+  {{\ttl PROGRAM MEMORY}\\[2pt]
+   128 $\times$ 16 \textperiodcentered{} asynchronous read\\[1pt]
+   {\textcolor{quiet}{loaded before the core runs}}};
 
-\node[card, anchor=north west, text width=12.40cm, minimum height=1.05cm] (loader) at (1.35,21.10)
-  {\ttl{CFG SPI target}\quad{\mod{proteus\_loader}}\\[1pt]
-   32-bit frames of command, address and data, MSB first, with MISO readback.\\
-   Writes program words, data bytes and the run bit; the core stays in reset while run = 0.};
+\node[unit, minimum width=3.40cm, minimum height=1.60cm, text width=3.10cm] (dram) at (12.10,11.25)
+  {{\ttl DATA MEMORY}\\[2pt]
+   64 $\times$ 8 \textperiodcentered{} direct or X-indexed\\[1pt]
+   {\textcolor{quiet}{loader or store}}};
 
-% =============================================================== stage 2: memory
-\node[pill, fill=memc] at (1.15,18.98) {MEMORY};
-\draw[stage] (1.15,17.30) rectangle (14.35,18.80);
+% ================================================================= core (centre)
+\draw[draw=stroke, line width=0.9pt, fill=corefill] (4.60,5.15) rectangle (15.60,8.60);
 
-\node[card, anchor=north west, text width=5.50cm, minimum height=1.10cm] (prog) at (1.35,18.65)
-  {\ttl{Program RAM}\quad{\mod{proteus\_prog\_ram}}\\[1pt]
-   128 $\times$ 16, asynchronous read};
+\node[anchor=base west, font=\sffamily\bfseries\fontsize{7.4}{8.4}\selectfont, text=ink, inner sep=0pt]
+  at (4.80,8.26) {PROTEUS CORE};
+\node[anchor=base east, font=\sffamily\fontsize{6.0}{7.0}\selectfont, text=quiet, inner sep=0pt]
+  at (15.40,8.26) {one instruction per enabled clock};
 
-\node[card, anchor=north west, text width=5.50cm, minimum height=1.10cm] (dram) at (8.05,18.65)
-  {\ttl{Data RAM}\quad{\mod{proteus\_data\_ram}}\\[1pt]
-   64 $\times$ 8, direct and X-indexed};
+\node[coreunit, minimum width=2.55cm, minimum height=2.36cm, text width=2.30cm] (pcstk) at (6.125,6.80)
+  {{\ttl PC + STACK}\\[2pt] pc[6:0]\\ 8-deep return\\ CALL / RET};
 
-% ============================================================== stage 3: execute
-\node[pill, fill=exec] at (1.15,16.32) {EXECUTE};
-\draw[stage] (1.15,9.95) rectangle (14.35,16.15);
-\node[font=\sffamily\tiny, text=mod, anchor=south west] at (1.35,10.02)
-  {proteus\_core \textbar{} no pipeline, no hidden wait states};
+\node[coreunit, minimum width=2.40cm, minimum height=2.36cm, text width=2.15cm] (decode) at (8.85,6.80)
+  {{\ttl DECODE}\\[2pt] 5-bit opcode\\ 3-bit subop\\ 1-clock retire};
 
-\node[card, anchor=north west, text width=5.30cm, minimum height=1.00cm] (pcstk) at (1.35,15.85)
-  {\ttl{PC + stack}\quad{\mod{pc[6:0]}}\\[1pt]
-   8-deep return stack, CALL and RET};
+\node[coreunit, minimum width=2.55cm, minimum height=2.36cm, text width=2.30cm] (alu) at (11.575,6.80)
+  {{\ttl ALU \textperiodcentered{} REGISTERS}\\[2pt] A X Y \textperiodcentered{} Z C N\\ add, sub, logic\\ shift, bit};
 
-\node[card, anchor=north west, text width=6.15cm, minimum height=1.00cm] (decode) at (7.35,15.85)
-  {\ttl{Decode}\\[1pt]
-   5-bit opcode, 3-bit subop, one-clock retire};
+\node[coreunit, minimum width=2.25cm, minimum height=2.36cm, text width=2.00cm] (tmr) at (14.225,6.80)
+  {{\ttl TIMER \textperiodcentered{} WAITS}\\[2pt] 16-bit counter\\ WAIT n\\ WAIT\_PIN, EDGE};
 
-\node[card, anchor=north west, text width=12.30cm, minimum height=0.90cm] (alu) at (1.35,14.55)
-  {\ttl{ALU + registers}\quad{\mod{A, X, Y, Z, C, N}}\\[1pt]
-   add, sub, logic, shift and bit operations};
+\draw[flow] (7.40,6.80) -- (7.65,6.80);
+\draw[flow] (10.05,6.80) -- (10.30,6.80);
+\draw[flow] (12.85,6.80) -- (13.10,6.80);
 
-\node[card, anchor=north west, text width=5.30cm, minimum height=1.00cm] (timer) at (1.35,13.30)
-  {\ttl{Timer}\quad{\mod{16-bit}}\\[1pt]
-   free running, atomic low and high read};
+% ================================================= pins and pads (right column)
+\node[unit, minimum width=2.60cm, minimum height=1.60cm, text width=2.30cm] (pinreg) at (17.85,6.20)
+  {{\ttl PIN REGISTERS}\\[2pt] uo\_out, uio\_out\\ uio\_oe, uio\_od};
 
-\node[card, anchor=north west, text width=6.15cm, minimum height=1.00cm] (wait) at (7.35,13.30)
-  {\ttl{Pin wait + edge}\quad{\mod{WAIT, WAIT\_PIN, WAIT\_EDGE}}\\[1pt]
-   stall on a masked pin level or on an edge};
+\node[unit, minimum width=2.60cm, minimum height=1.05cm, text width=2.30cm] (sync) at (17.85,8.075)
+  {{\ttl 2-FF SYNC}\\[1.5pt] ui\_in, uio\_in};
 
-\node[card, anchor=north west, text width=12.30cm, minimum height=0.85cm] (capctl) at (1.35,12.05)
-  {\ttl{Capture control}\quad{\mod{CAP\_EN, CAP\_POP, CAP\_STATUS}}\\[1pt]
-   pin changes recorded with a timestamp};
+\node[padunit, minimum width=2.05cm, minimum height=4.30cm, text width=1.75cm] (pads) at (20.925,7.00)
+  {{\ttl PAD RING}\\[3pt]
+   8 \,in\\ 8\, out\\ 8 bidirectional\\[3pt]
+   per-bit OE\\ and OD\\[3pt]
+   {\textcolor{quiet}{24 pins}}};
 
-% ==================================================== stage 4: pins and capture
-\node[pill, fill=pinc] at (1.15,8.55) {PINS};
-\draw[stage] (1.15,5.10) rectangle (14.35,8.40);
-
-\node[card, anchor=north west, text width=5.30cm, minimum height=1.15cm] (pinreg) at (1.35,8.15)
-  {\ttl{Pin registers}\\{\mod{uo\_out, uio\_out, uio\_oe, uio\_od}}\\[1pt]
-   per-bit output enable and open drain};
-
-\node[card, anchor=north west, text width=6.15cm, minimum height=1.15cm] (sync) at (7.75,8.15)
-  {\ttl{2-FF synchroniser}\quad{\mod{ui\_in, uio\_in}}\\[1pt]
-   asynchronous pads sampled by two flops};
-
-\node[card, anchor=north west, text width=5.30cm, minimum height=1.15cm] (edge) at (1.35,6.35)
-  {\ttl{Edge detect}\\[1pt]
-   any pin change against {\mod{last\_pins}}};
-
-\node[card, anchor=north west, text width=6.15cm, minimum height=1.15cm] (fifo) at (7.75,6.35)
-  {\ttl{Capture FIFO}\quad{\mod{proteus\_capture}}\\[1pt]
-   8 $\times$ 24 entries, status full and count};
-
-% ================================================================ stage 5: pads
-\node[pill, fill=padc] at (1.15,4.78) {PADS};
-\draw[stage] (1.15,2.30) rectangle (14.35,4.60);
-
-\node[card, anchor=north west, text width=12.30cm, minimum height=2.00cm] (pads) at (1.35,4.45)
-  {\ttl{Pad ring}\quad{\mod{the 24 pins to the shuttle}}\\[1pt]
-   8 {\mod{ui\_in}}, 8 {\mod{uo\_out}} and 8 {\mod{uio}} with per-bit output enable and
-   open-drain mode.\\
-   The loader and every protocol image in the repository share these pins after reset.};
+% ============================================================= capture (below)
+\node[unit, minimum width=4.40cm, minimum height=1.95cm, text width=4.10cm] (capture) at (13.45,2.775)
+  {{\ttl CAPTURE FIFO}\\[2pt]
+   8 $\times$ 24 entries\\[1pt]
+   \{timer[7:0], uio\_in, ui\_in\}\\[1pt]
+   {\textcolor{quiet}{status: full, count}}};
 
 % ======================================================================== nets
 
-% loader -> program memory
-\draw[ctl] (3.95,19.95) -- (3.95,18.65);
-\node[sigc, anchor=west] at (4.10,19.32) {program word};
+% loader write bus: up the left margin, then along the top into both memories.
+% Drawn as plain line segments so the only arrowheads are at the two memories.
+\draw[draw=ink, line width=0.6pt] (2.55,8.00) -- (2.55,12.55) -- (13.55,12.55);
+\draw[data] (7.00,12.55) -- (7.00,12.05);
+\draw[data] (13.55,12.55) -- (13.55,12.05);
+\fill[ink] (7.00,12.55) circle (0.035);
+\node[sig, rotate=90, anchor=south] at (2.43,10.05) {loader write bus};
 
-% loader -> data memory
-\draw[ctl] (10.75,19.95) -- (10.75,18.65);
-\node[sigc, anchor=west] at (10.90,19.32) {data byte, command 0x02};
+% program counter up to the program memory; instruction down to the core
+\draw[data] (5.50,8.60) -- (5.50,10.45);
+\draw[data] (6.30,10.45) -- (6.30,8.60);
+\bustick{5.50,9.55}
+\node[sig, anchor=east] at (5.38,9.95) {pc[6:0]};
+\node[sig, anchor=west] at (6.42,9.20) {instr[15:0]};
 
-% program memory -> execute
-\draw[data] (3.95,17.30) -- (3.95,15.85);
-\node[sig, anchor=west] at (4.10,16.55) {instr[15:0]};
+% core to data memory: one bidirectional port, drawn as a single bus
+\draw[both] (11.20,8.60) -- (11.20,10.45);
+\bustick{11.20,9.95}
+\node[sig, anchor=west] at (11.34,9.45) {d[7:0], addr, we};
 
-% execute -> data memory
-\draw[data] (9.35,16.15) -- (9.35,17.30);
-\node[sig, anchor=east] at (9.20,16.72) {addr, we, wdata};
+% core to the pin registers, and the registers out to the pads
+\draw[data] (15.60,6.20) -- (16.55,6.20);
+\draw[data] (19.15,6.20) -- (19.90,6.20);
 
-% data memory -> execute
-\draw[data] (12.35,17.30) -- (12.35,16.15);
-\node[sig, anchor=west] at (12.50,16.72) {rdata[7:0]};
+% pads back in through the synchroniser, then into the core
+\draw[data] (19.90,8.05) -- (19.15,8.05);
+\draw[data] (16.55,8.05) -- (15.60,8.05);
 
-% execute -> pin registers
-\draw[data] (3.95,9.95) -- (3.95,8.15);
-\node[sig, anchor=east, align=right] at (3.80,9.62) {uo\_out, uio\_out,\\ uio\_oe, uio\_od};
+% pads down to the capture front end
+\draw[data] (21.00,4.85) -- (21.00,3.05) -- (15.65,3.05);
+\node[sig, anchor=south] at (18.30,3.12) {24 pads};
 
-% synchroniser -> execute
-\draw[data] (9.85,8.15) -- (9.85,9.95);
-\node[sig, anchor=east] at (9.70,9.60) {ui\_in, uio\_in};
+% capture enable and pop from the core, and the popped entry back
+\draw[ctl] (14.60,5.15) -- (14.60,3.75);
+\node[sig, anchor=west] at (14.72,4.48) {CAP\_EN, CAP\_POP};
+\draw[data] (13.20,3.75) -- (13.20,5.15);
+\node[sig, anchor=east] at (13.05,4.48) {ui\_in, uio\_in};
 
-% execute -> capture fifo
-\draw[data] (12.85,9.95) -- (12.85,8.15);
-\node[sig, anchor=east, align=right] at (12.70,9.55) {timer,\\ CAP\_EN};
+% ------------------------------------------------------------------- footnotes
+\node[anchor=north west, text width=9.60cm, align=left,
+      font=\sffamily\fontsize{6.4}{7.9}\selectfont, text=body, inner sep=0pt]
+  at (0.90,4.62)
+  {Every ordinary instruction retires in one clock; only \texttt{WAIT}, \texttt{WAIT\_PIN},
+   \texttt{WAIT\_EDGE} and \texttt{HALT} hold the PC.\\
+   Pads pass through two flip-flops before any logic samples them, and every
+   flop has a defined reset value.\\
+   Protocol roles are firmware images loaded over the SPI target port after
+   fabrication.};
 
-% capture fifo -> execute
-\draw[data] (11.55,8.15) -- (11.55,9.95);
-\node[sig, anchor=east] at (11.40,9.24) {CAP\_UI};
-
-% pin registers -> pad ring, down the left margin
-\draw[data] (1.35,7.55) -- (0.92,7.55) -- (0.92,4.30) -- (1.35,4.30);
-\node[sig, rotate=90, anchor=south] at (0.80,6.05) {pad out, OE, OD};
-
-% pad ring -> edge detect
-\draw[data] (5.15,4.45) -- (5.15,6.35);
-\node[sig, anchor=west] at (5.30,4.82) {pads};
-
-% pad ring -> synchroniser, up the right margin
-\draw[data] (13.88,4.45) -- (14.62,4.45) -- (14.62,8.00) -- (13.88,8.00);
-\node[sig, anchor=east] at (13.75,4.82) {ui\_in, uio\_in};
-
-% edge detect -> capture fifo
-\draw[data] (6.65,5.75) -- (7.75,5.75);
-
-% run and reset trunk, in the right margin
-\draw[ctl, rounded corners=6pt] (14.35,20.60) -- (15.15,20.60) -- (15.15,12.55) -- (14.35,12.55);
-\node[sigc, rotate=90, anchor=south] at (15.28,16.60) {run, cfg\_busy};
+% ---------------------------------------------------------------------- legend
+\draw[data] (16.30,2.10) -- (17.10,2.10);
+\node[sig, anchor=west] at (17.20,2.10) {data path};
+\draw[ctl] (16.30,1.62) -- (17.10,1.62);
+\node[sig, anchor=west] at (17.20,1.62) {control, enable, write};
 
 \end{tikzpicture}
 \end{document}
