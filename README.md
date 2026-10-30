@@ -80,6 +80,15 @@ concrete: the hard part of either role is a program, not a hard macro. The price
 is that peak throughput is set by the instruction loop, so this design competes
 on exactness and reconfigurability, not on raw bit rate.
 
+![JTAG scan waveform: TCK, TMS, TDI and TDO captured from the cocotb run, with
+the sampled bits under the clock edges](docs/images/jtag_waveform.png)
+
+*Captured from the simulation, not drawn: eight of the 32 shift clocks of
+`test_jtag_idcode`. `TCK` idles high and is pulsed low by the firmware, `TMS` is
+held low for the whole scan, and `TDO` is the modelled TAP shifting out its
+IDCODE. Regenerate with `python scripts/make_waveform.py` after
+`fst2vcd test/tb.fst > test/tb.vcd`.*
+
 ## ISA at a glance
 
 Sixteen-bit words: 4-bit opcode, 3-bit sub-opcode, 1-bit port/immediate selector,
