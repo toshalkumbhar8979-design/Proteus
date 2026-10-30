@@ -8,18 +8,14 @@ Proteus-1 is not a bag of fixed UART, SPI, and I2C peripherals. It is a
 cycle-deterministic 8-bit CPU whose instruction set is built around pins, edges,
 and time, plus a host loader and a capture FIFO for looking at live buses.
 
-```
-          host loader (SPI)                  24 digital pins
- RP2350 ───────────────────────► ┌──────────────────────────────┐
-        CS_N SCK MOSI      MISO ──│ loader → 128 × 16 program RAM│
-                                  │           64 × 8 data RAM    │
-                                  │   ┌──────────────────────┐   │
-                                  │   │ Proteus-1 core       │──►│ uo_out[7:0]
-                                  │   │ A X Y PC flags       │◄──│ ui_in[7:0]
-                                  │   │ timer, capture FIFO  │◄─►│ uio[7:0]
-                                  │   └──────────────────────┘   │
-                                  └──────────────────────────────┘
-```
+![Proteus-1 block diagram: host loader, program and data RAM, the single-cycle
+core with its PC, ALU, timer, pin-wait and capture control, pin registers, the
+2-FF synchronisers, the pad ring, and the capture FIFO](docs/images/block_diagram.png)
+
+*Every arrow is a net that exists in [`src/tt_um_proteus.v`](src/tt_um_proteus.v),
+and `proteus_core` is drawn as a container because the PC, timer and capture
+control are registers inside it. Source: [`docs/figures/block_diagram.tex`](docs/figures/block_diagram.tex);
+rebuild with `make figures`.*
 
 ## Why a protocol CPU?
 
