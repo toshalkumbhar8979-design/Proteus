@@ -15,3 +15,7 @@ build/
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Working notes for whoever is building this: kept in the checkout, not published.
+AGENTS.md
+.freebuff/

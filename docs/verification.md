@@ -86,9 +86,9 @@ Yosys with the IHP SG13CMOS5L `typ_1p20V_25C` liberty, `abc` mapping, and
 | Latches inferred | 0 |
 | Multiply/divide cells | 0 |
 
-The 256-word variant was measured at 420,028 µm² (56%) and rejected; see
-`AGENTS.md` D-009. The 128-word build leaves the remaining area for clock-tree
-buffers, routing, and timing repair.
+The 256-word variant was measured at 420,028 µm² (56%) and rejected as too
+large a tapeout risk. The 128-word build leaves the remaining area for
+clock-tree buffers, routing, and timing repair.
 
 Verilator `-Wall` reports one warning: the `N` flag is not consumed by any
 branch in ISA v1. It is architectural state, visible to the ISS and to future

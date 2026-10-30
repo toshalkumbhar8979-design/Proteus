@@ -350,9 +350,9 @@ command-line flags.
 
 ## 9. Version
 
-ISA v1.0, 2026-10-29. Program memory is 128 x 16; PC is 7 bits. Changes require
-an entry in `AGENTS.md` and updates to the RTL, assembler, ISS, and tests in the
-same commit.
+ISA v1.0, 2026-10-29. Program memory is 128 x 16; PC is 7 bits. An ISA change is
+one atomic commit that updates this document, the RTL, the assembler, the ISS,
+and the tests together.
 
 ## 10. Reference firmware pinouts
 
