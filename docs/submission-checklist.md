@@ -52,12 +52,7 @@ Ready to hand over, not yet handed in. The chip, toolchain, tests, timing
 signoff, and documentation are complete and green; what is missing is the
 submission form itself, which Jane Street has not opened yet.
 
-If there is one more push before January, the highest-value additions, in order:
-
-1. A short capture/replay demo video — the cheapest way to make the chip
-   legible to a human judge.
-
-The two engineering items on that list are done:
+The two engineering items that were on this list are done:
 
 - **JTAG master.** `programs/jtag_idcode.s` resets a TAP, walks it to Shift-DR
   with the existing pin instructions, clocks out 32 bits, and checks a default
@@ -67,8 +62,10 @@ The two engineering items on that list are done:
   invariant: after a CALL, the slot below the new `sp` holds `PC+1`; after a
   RET, the PC equals the slot the pointer popped, through the same truncation
   the instruction performs.
-3. A return-stack formal property — closes the one piece of architectural state
-   that currently relies on simulation alone.
+
+If there is one more push before January, the remaining high-value addition is
+a short capture/replay demo video — the cheapest way to make the chip legible
+to a human judge.
 
 ## Claims to keep honest
 

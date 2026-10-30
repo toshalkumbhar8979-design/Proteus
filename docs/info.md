@@ -78,7 +78,11 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
    or `programs/i2c_target.s` (works at both rates).
 5. For PS/2, add pull-ups to `uio[0]` (DATA) and `uio[1]` (CLK), load
    `programs/ps2_device.s`, and decode the 11-bit device frame with a host.
-6. Rebuild and rerun the simulation with `cd test && make -B`; all 21 tests
+6. For JTAG, connect `uio[0]` = TCK, `uio[1]` = TMS, `uio[2]` = TDI, and
+   `ui_in[4]` = TDO to a target's TAP, then load `programs/jtag_idcode.s`.
+   `uo_out` becomes `0xC3` when the target returns IDCODE `0x1A5A5A5D`, and
+   `0xE7` otherwise.
+7. Rebuild and rerun the simulation with `cd test && make -B`; all 21 tests
    should pass.
 
 On power-up the program memory is undefined, so the chip does nothing until the

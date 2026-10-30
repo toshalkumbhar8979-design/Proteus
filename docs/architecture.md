@@ -218,4 +218,6 @@ hardened timing run and a fresh protocol-rate check.
 2. Dual core or four contexts for concurrent protocols.
 3. Hardware Manchester encoder/decoder and CRC for low-speed USB / 10BASE-T.
 4. A host GUI that loads images and plots capture FIFO traces.
-5. Formal properties for the loader FSM and the return stack.
+5. An ISA-equivalence proof, or a full formal model of the loader FSM. The six
+   proven invariants cover PC freeze, the timer, the capture bound, loader
+   framing, idle outputs, and the CALL/RET return stack.
