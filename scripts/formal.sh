@@ -12,6 +12,7 @@
 #   capture      the capture FIFO fill level never exceeds its depth
 #   loader       an idle loader has an empty frame shifter after one clock
 #   outputs      stopped, out-of-frame outputs and output enables are all low
+#   stack        CALL pushes PC+1 and RET restores exactly that address
 #
 # The properties live in `ifdef FORMAL blocks in the RTL, so they never reach
 # synthesis. Excluding a property is done with the matching F_NO_* define.
@@ -56,11 +57,12 @@ run_property() {
   echo "PASS: $name (BMC + induction)"
 }
 
-run_property pc_freeze "-DF_NO_TIMER -DF_NO_CAP -DF_NO_LOADER -DF_NO_OUT"
-run_property timer     "-DF_NO_PC -DF_NO_CAP -DF_NO_LOADER -DF_NO_OUT"
-run_property capture   "-DF_NO_PC -DF_NO_TIMER -DF_NO_LOADER -DF_NO_OUT"
-run_property loader    "-DF_NO_PC -DF_NO_TIMER -DF_NO_CAP -DF_NO_OUT"
-run_property outputs   "-DF_NO_PC -DF_NO_TIMER -DF_NO_CAP -DF_NO_LOADER"
+run_property pc_freeze "-DF_NO_TIMER -DF_NO_CAP -DF_NO_LOADER -DF_NO_OUT -DF_NO_STACK"
+run_property timer     "-DF_NO_PC -DF_NO_CAP -DF_NO_LOADER -DF_NO_OUT -DF_NO_STACK"
+run_property capture   "-DF_NO_PC -DF_NO_TIMER -DF_NO_LOADER -DF_NO_OUT -DF_NO_STACK"
+run_property loader    "-DF_NO_PC -DF_NO_TIMER -DF_NO_CAP -DF_NO_OUT -DF_NO_STACK"
+run_property outputs   "-DF_NO_PC -DF_NO_TIMER -DF_NO_CAP -DF_NO_LOADER -DF_NO_STACK"
+run_property stack     "-DF_NO_PC -DF_NO_TIMER -DF_NO_CAP -DF_NO_LOADER -DF_NO_OUT"
 
 echo
 echo "== all properties together =="

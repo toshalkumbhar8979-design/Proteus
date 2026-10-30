@@ -48,7 +48,7 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **20/20 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, capture + overflow, opcode sweep, co-simulation) |
+| Cocotb tests | **21/21 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow, opcode sweep, co-simulation) |
 | RTL vs ISS | all 96 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
@@ -57,7 +57,7 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
 | Post-route timing | **32 MHz passes all three corners**: slow-corner setup slack **+6.10 ns**, 0 violating paths, hold positive everywhere |
 | Hardened area | 1,289 × 711 µm die; 383,307 µm² of placed standard cells; 7.35 mW typical at 32 MHz |
-| Formal | **5 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs) |
+| Formal | **6 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs, CALL/RET return stack) |
 | FPGA portability | ECP5 25k: 1,611 LUT4 (6%), 544 FF (2%), **65.9 MHz** against the 32 MHz target — mapped and routed, no board needed |
 
 ## ISA at a glance
@@ -117,6 +117,7 @@ because ASIC RAM powers up undefined.
 | [`i2c_master_400k.s`](programs/i2c_master_400k.s) | Same exchange at ~400 kHz; SCL period is measured by the test |
 | [`i2c_target.s`](programs/i2c_target.s) | Target role, address `0x50`, open-drain ACK |
 | [`ps2_device.s`](programs/ps2_device.s) | PS/2 device transmit: 11-bit frame, odd parity, open-drain clock/data |
+| [`jtag_idcode.s`](programs/jtag_idcode.s) | JTAG master: resets a TAP, walks to Shift-DR, clocks 32 bits, checks a default IDCODE |
 | [`capture_demo.s`](programs/capture_demo.s) | Capture FIFO records pin changes, firmware drains it |
 
 ## Quick start
@@ -125,7 +126,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 20 tests
+# RTL simulation: 21 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B

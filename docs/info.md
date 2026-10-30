@@ -78,7 +78,7 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
    or `programs/i2c_target.s` (works at both rates).
 5. For PS/2, add pull-ups to `uio[0]` (DATA) and `uio[1]` (CLK), load
    `programs/ps2_device.s`, and decode the 11-bit device frame with a host.
-6. Rebuild and rerun the simulation with `cd test && make -B`; all 20 tests
+6. Rebuild and rerun the simulation with `cd test && make -B`; all 21 tests
    should pass.
 
 On power-up the program memory is undefined, so the chip does nothing until the

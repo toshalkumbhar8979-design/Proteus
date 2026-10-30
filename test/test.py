@@ -922,3 +922,129 @@ async def test_pin_wait(dut):
     await wait_for_uo(dut, 0x02)
     dut.ui_in.value = ui_word(1, 0, 0, low=0x00)
     await wait_for_uo(dut, 0x04)
+
+
+# ---------------------------------------------------------------------------
+# JTAG
+# ---------------------------------------------------------------------------
+
+JTAG_TCK = 0x01
+JTAG_TMS = 0x02
+JTAG_TDI = 0x04
+JTAG_TDO = 0x10
+
+# IEEE 1149.1 TAP state transitions, keyed by (state, TMS).
+JTAG_NEXT = {
+    ("TLR", 0): "RTI", ("TLR", 1): "TLR",
+    ("RTI", 0): "RTI", ("RTI", 1): "SELECT_DR",
+    ("SELECT_DR", 0): "CAPTURE_DR", ("SELECT_DR", 1): "SELECT_IR",
+    ("CAPTURE_DR", 0): "SHIFT_DR", ("CAPTURE_DR", 1): "EXIT1_DR",
+    ("SHIFT_DR", 0): "SHIFT_DR", ("SHIFT_DR", 1): "EXIT1_DR",
+    ("EXIT1_DR", 0): "PAUSE_DR", ("EXIT1_DR", 1): "UPDATE_DR",
+    ("PAUSE_DR", 0): "PAUSE_DR", ("PAUSE_DR", 1): "EXIT2_DR",
+    ("EXIT2_DR", 0): "SHIFT_DR", ("EXIT2_DR", 1): "UPDATE_DR",
+    ("UPDATE_DR", 0): "RTI", ("UPDATE_DR", 1): "SELECT_DR",
+    ("SELECT_IR", 0): "CAPTURE_IR", ("SELECT_IR", 1): "TLR",
+    ("CAPTURE_IR", 0): "SHIFT_IR", ("CAPTURE_IR", 1): "EXIT1_IR",
+    ("SHIFT_IR", 0): "SHIFT_IR", ("SHIFT_IR", 1): "EXIT1_IR",
+    ("EXIT1_IR", 0): "PAUSE_IR", ("EXIT1_IR", 1): "UPDATE_IR",
+    ("PAUSE_IR", 0): "PAUSE_IR", ("PAUSE_IR", 1): "EXIT2_IR",
+    ("EXIT2_IR", 0): "SHIFT_IR", ("EXIT2_IR", 1): "UPDATE_IR",
+    ("UPDATE_IR", 0): "RTI", ("UPDATE_IR", 1): "SELECT_DR",
+}
+
+
+class JtagTapModel:
+    """Minimal 1149.1 target: TAP FSM, default IDCODE, 32-bit DR."""
+
+    def __init__(self, dut, idcode: int = 0x1A5A5A5D) -> None:
+        self.dut = dut
+        self.idcode = idcode
+        self.state = "TLR"
+        self.ir = 0x01          # IEEE default out of Test-Logic-Reset
+        self.dr_capture = 0
+        self.shift = 0
+        self.width = 0
+        self.tdo = 0
+        self.prev_tck = 0
+        self.rises = 0
+        self.shifts = 0
+
+    def on_rising(self, tms: int, tdi: int) -> None:
+        self.rises += 1
+        pre = self.state
+        nxt = JTAG_NEXT[(pre, tms)]
+
+        if pre == "CAPTURE_DR" and nxt == "SHIFT_DR":
+            self.dr_capture = self.idcode if self.ir == 0x01 else 0
+            self.shift = self.dr_capture
+            self.width = 32
+            self.tdo = self.shift & 1
+        elif pre == "CAPTURE_IR" and nxt == "SHIFT_IR":
+            self.shift = 0b01
+            self.width = 4
+            self.tdo = self.shift & 1
+        elif pre in ("SHIFT_DR", "SHIFT_IR"):
+            mask = (1 << self.width) - 1
+            self.shift = ((self.shift >> 1) | (tdi << (self.width - 1))) & mask
+            self.shifts += 1
+            self.tdo = self.shift & 1
+
+        if nxt != pre:
+            self.dut._log.info("TAP %s -> %s (tms=%d tdi=%d)", pre, nxt, tms, tdi)
+        self.state = nxt
+        # Drive TDO as soon as the bit is known. The firmware samples it during
+        # the low phase, so presenting it at the rising edge gives a full cycle
+        # of setup and avoids a same-edge race with the IN instruction.
+        self.drive_tdo()
+
+    def drive_tdo(self) -> None:
+        # TDO lives on ui_in[4]; the loader pins stay idle (CS_N high).
+        self.dut.ui_in.value = ui_word(1, 0, 0, low=(self.tdo & 1) << 4)
+
+
+async def run_jtag_tap(dut, tap: JtagTapModel, done) -> None:
+    while not done[0]:
+        await RisingEdge(dut.clk)
+        uio = int(dut.uio_out.value)
+        tck = uio & 1
+        if tck and not tap.prev_tck:
+            tap.on_rising((uio >> 1) & 1, (uio >> 2) & 1)
+        tap.prev_tck = tck
+
+
+@cocotb.test()
+async def test_jtag_idcode(dut):
+    """Firmware walks a TAP to Shift-DR and checks a 32-bit IDCODE."""
+    await reset_dut(dut)
+    image = load_source("jtag_idcode.s")
+    await load_image(dut, image)
+
+    tap = JtagTapModel(dut)
+    done = [False]
+    runner = cocotb.start_soon(run_jtag_tap(dut, tap, done))
+
+    marker = None
+    try:
+        for _ in range(40000):
+            await RisingEdge(dut.clk)
+            value = int(dut.uo_out.value)
+            if value in (0xC3, 0xE7):
+                marker = value
+                break
+    finally:
+        done[0] = True
+        runner.cancel()
+
+    dut._log.info(
+        "JTAG marker=%s state=%s rises=%d shifts=%d ir=%d dr=%08x",
+        marker, tap.state, tap.rises, tap.shifts, tap.ir, tap.dr_capture,
+    )
+    assert tap.state == "RTI", (
+        f"scan ended in {tap.state}; Exit1-DR -> Update-DR -> RTI was expected")
+    assert tap.ir == 0x01, f"IR was {tap.ir:#x}, expected IDCODE"
+    assert tap.dr_capture == 0x1A5A5A5D, (
+        f"TAP captured DR {tap.dr_capture:#010x}")
+    assert tap.shifts == 31, (
+        f"expected 31 shift clocks after the entry edge, saw {tap.shifts}")
+    assert marker == 0xC3, f"firmware reported {marker and hex(marker)}"

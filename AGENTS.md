@@ -333,6 +333,52 @@ block RAM, and **65.9 MHz** against the declared 32 MHz. This is a portability
 and timing-margin check, not a board run: pins are unconstrained and no
 bitstream was loaded. Do not describe it as hardware validation.
 
+### 2026-10-30 — D-022: JTAG master firmware and a return-stack property
+
+D-021 recorded five formal properties and no protocol outside UART, SPI, I2C,
+and PS/2. Both gaps are now closed.
+
+**JTAG master.** `programs/jtag_idcode.s` drives `uio[0]` = TCK, `uio[1]` = TMS,
+`uio[2]` = TDI, and reads TDO on `ui_in[4]`. It holds a TAP in Test-Logic-Reset
+for five TCK, walks Run-Test/Idle -> Select-DR -> Capture-DR -> Shift-DR, then
+clocks 32 bits and samples TDO after each falling edge. The IEEE default
+instruction out of reset is IDCODE (`0x01`), so no IR scan is needed. Firmware
+assembles the LSB-first stream into four bytes and compares `0x1A5A5A5D`,
+writing `0xC3` on a match and `0xE7` on a mismatch. `test_jtag_idcode` models
+the 1149.1 TAP FSM and asserts the state path, the transition into Shift-DR plus
+31 further shift clocks, the IR value, the captured DR word, and the `0xC3`
+marker. Test count is now 21 RTL tests and 18 gate-level tests; the three
+co-simulation tests remain skipped at gate level by design.
+
+Two bugs were found and fixed while landing it. The firmware masked TDO to its
+pin bit and then tested bit 0, so every sample read as zero; it now compares the
+masked value against zero. The first test version sampled TDO from `uio_in`,
+which the cocotb I2C bus model owns, so the demo reads `ui_in[4]` instead;
+moving it to a `uio` pin is a two-constant change and is recorded as a
+limitation rather than hidden.
+
+**Return-stack property.** `scripts/formal.sh` proves a sixth invariant,
+`stack`: after a CALL retires, `sp` has advanced and `stack[sp-1]` equals the
+pushed `PC+1`; after a RET, `sp` has dropped and the PC equals the slot the
+pointer popped. The RET assertion compares through the `PROG_AW` truncation the
+instruction performs, because a pushed return address of `0x80` (PC was `0x7F`)
+comes back as zero. It is checked with the same 40-cycle BMC and temporal
+induction as the others, alone and in the combined run.
+
+The harness again caught its own author first: the RET assertion sampled
+`stack[$past(sp) - 1]`, which indexes with `sp` from two cycles back instead of
+the slot RET actually read, and it compared a full byte against a 7-bit PC. Both
+were errors in the assertion, not in the RTL; the assertions were corrected and
+the RTL was not touched. This is the third instance of the same `$past`
+off-by-one class here, so the rule is now written into `docs/verification.md`:
+`$past(x)` is the value of `x` at the previous clock, and nesting `$past` inside
+a memory index samples with state from one cycle earlier still.
+
+Evidence: 21/21 RTL tests, 7/7 toolchain tests, 12 programs assembled, six
+formal properties plus the combined run all PASS. `docs/verification.md`,
+`docs/competition.md`, `docs/submission-checklist.md`, and the README carry the
+updated counts and the new honest-gap bullets.
+
 ## 5. Open questions (append answers, do not delete)
 
 - Q-001: Final GitHub username for `top_module` and repo URL. Until known, use

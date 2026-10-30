@@ -28,8 +28,8 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=20 PASS=20 FAIL=0 SKIP=0
-TOTAL SIM TIME=4,019,410 ns
+TESTS=21 PASS=21 FAIL=0 SKIP=0
+TOTAL SIM TIME=4,033,620 ns
 ```
 
 | Test | Stimulus | What it proves |
@@ -47,6 +47,7 @@ TOTAL SIM TIME=4,019,410 ns
 | `test_i2c_master` | Run `i2c_master.s` against a cocotb target model | START, address `0x50`, data `0x42`, ACK sampling, STOP |
 | `test_i2c_master_400k` | Run `i2c_master_400k.s`, measure SCL rising-to-rising periods | Same exchange at ~400 kHz; every measured bit period is 80–84 clocks (381–400 kHz at 32 MHz) |
 | `test_ps2_device` | Run `ps2_device.s`, decode DATA on CLK falling edges | Start, eight LSB-first data bits, odd parity, stop; data `0x5A` |
+| `test_jtag_idcode` | Run `jtag_idcode.s` against a modelled 1149.1 TAP | Test-Logic-Reset, 32 TCK, path to Shift-DR, TDO sampled MSB-first, `0x1A5A5A5D` compared in firmware; a match writes `0xC3` |
 | `test_i2c_target` | Run `i2c_target.s` against a cocotb controller model | Address match, ACK, received byte `0x42`, open-drain bus behaviour |
 | `test_i2c_target_400k` | Same target, 80-clock SCL periods | Address/data ACKs and `0x42` at 400 kHz timing |
 | `test_capture` | Toggle pins with `CAP_EN=1`, drain with `CAP_POP` | Edge detection, timestamped entries, FIFO count/empty status, data ordering |
@@ -129,11 +130,11 @@ at `https://toshalkumbhar8979-design.github.io/Proteus/`.
 
 The `GATES=yes` path runs the same cocotb suite against a flattened netlist.
 Three co-simulation tests read named core registers and are skipped there; the
-other 17 drive real pins. They pass on **both** the synthesis netlist and the
+other 18 drive real pins. They pass on **both** the synthesis netlist and the
 post-place-and-route netlist, using the Icarus 13 build the action ships:
 
 ```
-GATES=yes: 17 passed, 3 skipped, 0 failed
+GATES=yes: 18 passed, 3 skipped, 0 failed
 ```
 
 ## 5. Formal properties
@@ -150,6 +151,7 @@ pc_freeze  PASS   the PC does not move while the core is disabled
  capture   PASS   the capture FIFO count never exceeds its depth
  loader    PASS   an idle loader has an empty frame shifter after one clock
  outputs   PASS   stopped, out-of-frame outputs and enables are all low
+ stack     PASS   CALL pushes PC+1 and RET restores exactly that address
 ```
 
 These are the properties the firmware and the host loader depend on. `pc_freeze`
@@ -157,14 +159,27 @@ is what makes host reprogramming safe: `en` is low for the whole time `CFG_CS_N`
 is asserted, so a frame cannot race a fetch. `loader` is what makes back-to-back
 frames independent. `capture` bounds the only array whose index comes from a
 counter, so `CAP_STATUS` can never report a depth that walks past the FIFO.
+`stack` ties the two halves of the return stack together: after a CALL the slot
+below the new pointer must hold `PC+1`, and after a RET the PC must equal the
+slot the pointer popped. Without the second half, a pointer that moved without
+the data moving would still look balanced.
 
 Two things about this proof are worth stating plainly. First, the harness was
 validated: during development it produced counterexamples that turned out to be
-off-by-one errors in the properties themselves, not in the RTL, and one property
-was only true after reset — the assertions were corrected, not weakened, and the
-RTL was untouched. Second, the proof is not exhaustive: it covers the listed
-invariants with free inputs, but it does not prove ISA equivalence, branch
-reachability, or liveness, and there are no properties on the return stack yet.
+off-by-one errors in the properties themselves, not in the RTL. `$past` samples
+an expression one edge back, so `pc == $past(pc)` is not "the PC moved" — it
+compares the PC with itself a cycle earlier and looks like a violation whenever
+the core is enabled. The capture bound likewise only holds after reset has been
+observed. The `stack` property produced the same class of mistake twice: it
+sampled `stack[$past(sp) - 1]`, which indexes with `sp` from two cycles back,
+and it compared a full byte against a `PROG_AW`-bit PC without the truncation
+`RET` performs. In all three cases the assertion was corrected and the RTL was
+left alone.
+
+Second, the proof is not exhaustive: it covers the listed invariants with free
+inputs, but it does not prove ISA equivalence, branch reachability, or liveness.
+The return stack is now included, but the loader FSM still has a hand-written
+property rather than a full equivalence check.
 
 ## 6. FPGA portability check
 
@@ -204,9 +219,15 @@ These are the honest gaps. They are not covered by the numbers above.
   0–3; target-role CPOL/CPHA variants are firmware changes and are not tested.
 - **PS/2 is device-to-host transmit only.** There is no keyboard/host receive
   path, no scan-code table, and no bidirectional inhibit handling.
-- **Formal coverage is a small set of invariants.** Five properties are proven;
-  there is no ISA-equivalence proof, no liveness proof, and no return-stack
-  property. Simulation, not a proof, is still what covers most of the behaviour.
+- **JTAG is a master only, and a minimal one.** The firmware walks a TAP to
+  Shift-DR, clocks out a default IDCODE, and checks it; it does not scan an
+  instruction register, do boundary scan, drive a multi-device chain, or act as
+  a TAP target itself. The demo samples TDO on `ui_in[4]` so the cocotb I2C bus
+  model, which owns `uio_in`, cannot collide with it; on a board the same two
+  constants can point it at a `uio` pin.
+- **Formal coverage is a small set of invariants.** Six properties are proven,
+  including the return stack; there is no ISA-equivalence proof and no liveness
+  proof. Simulation, not a proof, is still what covers most of the behaviour.
 - **Coverage is behavioural, not line/branch coverage.** No coverage tool was
   run, so no percentage is claimed.
 - **The 48 MHz target was not met, and 32 MHz is the declared clock.** The

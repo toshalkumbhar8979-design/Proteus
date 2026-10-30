@@ -553,6 +553,33 @@ module proteus_core #(
       if ($past(rst_n) && $past(en))
         assert ((timer == ($past(timer) + 16'd1)) || (timer == 16'd0));
 `endif
+`ifndef F_NO_STACK
+      // CALL pushes PC+1 into stack[sp] and bumps sp; RET reads stack[sp-1] into
+      // PC and drops sp. These two assertions tie the pointer arithmetic to the
+      // data so neither half can drift: right after a CALL the slot below the
+      // new sp must hold the return address, and right after a RET the PC must
+      // be exactly the slot the popped pointer addresses. sp is three bits, so
+      // an overflow wraps to entry 0 on purpose; the modulo-8 index below is the
+      // same arithmetic the RTL performs, including that wrap.
+      if ($past(rst_n) && $past(cpu_active)) begin
+        if (($past(op) == OP_BRANCH) && ($past(sub) == 3'd5)) begin
+          assert (sp == ($past(sp) + 3'd1));
+          assert (stack[sp - 3'd1] == ({1'b0, $past(pc)} + 8'd1));
+        end
+        if (($past(op) == OP_BRANCH) && ($past(sub) == 3'd6)) begin
+          assert (sp == ($past(sp) - 3'd1));
+          // RET loads only PROG_AW bits, so a return address of 0x80 (PC was
+          // 0x7F) comes back as 0. Compare through the same truncation.
+          //
+          // The index is the *current* sp: $past samples the whole expression
+          // one edge back, and in that cycle sp was one higher than it is now,
+          // so stack[sp - 1] here is exactly the slot RET read. Writing
+          // $past(stack[$past(sp) - 1]) instead would sample with sp from two
+          // cycles back and be off by one frame.
+          assert ({1'b0, pc} == ($past(stack[sp - 3'd1]) & 8'h7F));
+        end
+      end
+`endif
     end
   end
 `endif

@@ -76,6 +76,7 @@ All of these run on the RTL through the real loader and are checked by cocotb:
 | I2C ~100 kHz, address `0x28` | Controller | START, address, `0x42`, ACK, STOP |
 | I2C ~400 kHz, address `0x28` | Controller | Same exchange; SCL period measured at 80–84 clocks |
 | PS/2 device-to-host | Device | 11-bit frame, odd parity, open-drain clock/data, `0x5A` |
+| JTAG 1149.1 | Master | TAP reset, 32 TCK, Shift-DR, `0x1A5A5A5D` IDCODE clocked out and checked |
 | I2C ~100 kHz, address `0x50` | Target | Address match, ACK, data `0x42` |
 | I2C ~400 kHz, address `0x50` | Target | Same target with 80-clock SCL periods |
 | Capture FIFO | Analyzer | Timestamped pin changes drained in order |
@@ -90,7 +91,7 @@ hard part of either role.
 The verification story is the part most likely to decide a close competition.
 Proteus-1 uses three independent layers:
 
-1. **Directed cocotb tests through the loader.** Twenty tests drive real
+1. **Directed cocotb tests through the loader.** Twenty-one tests drive real
    frames, real pin waveforms, and real bus models. They check what a scope
    would see, not internal signals.
 2. **Exhaustive and randomized RTL/ISS lock-step.** Every opcode/subop pair in
@@ -101,12 +102,13 @@ Proteus-1 uses three independent layers:
 3. **Toolchain unit tests.** Seven tests cover all 96 encodings, every mnemonic,
    directives, assembler errors, ISS arithmetic, exact `WAIT` semantics, and
    stack behaviour.
-4. **Formal properties.** Five invariants are proven with yosys SAT, each as a
+4. **Formal properties.** Six invariants are proven with yosys SAT, each as a
    bounded model check and as a temporal-induction proof: the PC is frozen while
    the core is disabled, the cycle timer only advances by one or is cleared, the
    capture FIFO never reports more entries than it holds, an idle loader has an
-   empty frame shifter, and stopped out-of-frame outputs are all low. These are
-   the properties the host loader and the firmware rely on, not decoration.
+   empty frame shifter, stopped out-of-frame outputs are all low, and a CALL/RET
+   pair moves the return-stack pointer and its data together. These are the
+   properties the host loader and the firmware rely on, not decoration.
 5. **FPGA portability.** With no board available, the design was mapped,
    placed, and routed for an ECP5 LFE5U-25F instead: 1,611 LUT4s (6%), 544
    flip-flops (2%), and 65.9 MHz against the 32 MHz target. That proves the RTL
@@ -168,7 +170,7 @@ the author's.
 ## Reproduce it
 
 ```sh
-cd test && make -B                              # 20 RTL tests
+cd test && make -B                              # 21 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
 ./scripts/formal.sh                             # 5 proven invariants

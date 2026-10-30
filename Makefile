@@ -1,6 +1,6 @@
 # Proteus-1 top-level build.
 #
-#   make test       RTL cocotb suite (20 tests)
+#   make test       RTL cocotb suite (21 tests)
 #   make tools      assembler/disassembler/ISS unit tests (7 tests)
 #   make programs   assemble every example into build/programs
 #   make synth      Yosys area estimate against IHP CMOS5L
