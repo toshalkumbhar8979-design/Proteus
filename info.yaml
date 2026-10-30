@@ -31,7 +31,7 @@ pinout:
   ui[1]: "IN1 / GPIO input"
   ui[2]: "IN2 / GPIO input"
   ui[3]: "UART RX (uart_rx.s) / GPIO input"
-  ui[4]: "IN4 / GPIO input"
+  ui[4]: "JTAG TDO (jtag_idcode.s) / GPIO input"
   ui[5]: "CFG_MOSI (host loader)"
   ui[6]: "CFG_SCK (host loader)"
   ui[7]: "CFG_CS_N (host loader, active low)"
@@ -47,10 +47,10 @@ pinout:
   uo[7]: "CFG_MISO while CS_N low; UART TX (uart_tx.s) in run mode"
 
   # Bidirectional pins
-  uio[0]: "BIO0 / SPI CS (spi_master.s)"
-  uio[1]: "BIO1 / SPI MOSI (spi_master.s)"
-  uio[2]: "BIO2 / SPI MISO or I2C SCL (spi_master.s, i2c_master.s)"
-  uio[3]: "BIO3 / SPI SCK or I2C SDA (spi_master.s, i2c_master.s)"
+  uio[0]: "BIO0 / SPI CS, PS/2 DATA (open-drain), or JTAG TCK"
+  uio[1]: "BIO1 / SPI MOSI, PS/2 CLK (open-drain), or JTAG TMS"
+  uio[2]: "BIO2 / SPI MISO, I2C SCL, or JTAG TDI (open-drain for I2C)"
+  uio[3]: "BIO3 / SPI SCK or I2C SDA (open-drain for I2C)"
   uio[4]: "BIO4 / GPIO"
   uio[5]: "BIO5 / GPIO"
   uio[6]: "BIO6 / GPIO"

@@ -28,16 +28,19 @@ diagram. New protocols are firmware loaded after fabrication.
 | `ui_in[7]` | `CFG_CS_N` (active low) | GPIO input |
 | `ui_in[6]` | `CFG_SCK` | GPIO input |
 | `ui_in[5]` | `CFG_MOSI` | GPIO input |
-| `ui_in[4:0]` | GPIO inputs | GPIO inputs |
+| `ui_in[4]` | GPIO input | GPIO input / JTAG TDO |
+| `ui_in[3:0]` | GPIO inputs | GPIO inputs / UART RX on `[3]` |
 | `uo_out[7]` | `CFG_MISO` | GPIO output / default UART TX |
 | `uo_out[6:0]` | 0 | GPIO outputs |
 | `uio[7:0]` | high impedance | GPIO, open-drain capable |
 
 The default example firmware uses `uo_out[7]` for UART TX at 76.8 kbaud 8N1
-(32 MHz clock, 417 cycles per bit),
-`ui_in[3]` for UART RX, and the standard Tiny Tapeout Pmod pinout for SPI
-(`uio[0]` CS, `uio[1]` MOSI, `uio[2]` MISO, `uio[3]` SCK) and I2C
-(`uio[2]` SCL, `uio[3]` SDA).
+(32 MHz clock, 417 cycles per bit) and `ui_in[3]` for UART RX. It keeps the
+standard Tiny Tapeout Pmod pinout for SPI (`uio[0]` CS, `uio[1]` MOSI,
+`uio[2]` MISO, `uio[3]` SCK) and I2C (`uio[2]` SCL, `uio[3]` SDA). Two other
+images reuse those pins without changing the ring: `ps2_device.s` drives
+`uio[0]` (DATA) and `uio[1]` (CLK) open-drain, and `jtag_idcode.s` drives
+`uio[0]`/`uio[1]`/`uio[2]` as TCK/TMS/TDI while reading TDO on `ui_in[4]`.
 
 ## Host loader
 
