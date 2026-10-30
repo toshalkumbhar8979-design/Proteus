@@ -8,14 +8,14 @@ Proteus-1 is not a bag of fixed UART, SPI, and I2C peripherals. It is a
 cycle-deterministic 8-bit CPU whose instruction set is built around pins, edges,
 and time, plus a host loader and a capture FIFO for looking at live buses.
 
-![Proteus-1 block diagram: host loader, program and data RAM, the single-cycle
-core with its PC, ALU, timer, pin-wait and capture control, pin registers, the
-2-FF synchronisers, the pad ring, and the capture FIFO](docs/images/block_diagram.png)
+![Proteus-1 block diagram: five stages from the host loader through program and
+data RAM, the single-cycle core, pin registers and capture, to the pad ring](docs/images/block_diagram.png)
 
-*Every arrow is a net that exists in [`src/tt_um_proteus.v`](src/tt_um_proteus.v),
-and `proteus_core` is drawn as a container because the PC, timer and capture
-control are registers inside it. Source: [`docs/figures/block_diagram.tex`](docs/figures/block_diagram.tex);
-rebuild with `make figures`.*
+*Read top to bottom: host loader, memories, the core, the pin and capture stage,
+then the pad ring. Every arrow is a net that exists in
+[`src/tt_um_proteus.v`](src/tt_um_proteus.v). Source:
+[`docs/figures/block_diagram.tex`](docs/figures/block_diagram.tex); rebuild with
+`make figures`.*
 
 ## Why a protocol CPU?
 
@@ -55,6 +55,30 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Hardened area | 1,289 × 711 µm die; 383,307 µm² of placed standard cells; 7.35 mW typical at 32 MHz |
 | Formal | **6 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs, CALL/RET return stack) |
 | FPGA portability | ECP5 25k: 1,611 LUT4 (6%), 544 FF (2%), **65.9 MHz** against the 32 MHz target — mapped and routed, no board needed |
+
+## One core, every protocol
+
+There is no UART block, no SPI block, no I2C block. The table below is the same
+hardened core — 383,307 µm² of placed cells — running eight different images.
+Every row is a cocotb test against the RTL through the real loader, not a
+hand-written waveform.
+
+| Protocol | Role | Timing at 32 MHz | Mechanism in firmware | Test |
+|---|---|---|---|---|
+| UART 8N1 | transmitter | 76.8 kbaud, 417 clocks per bit | `WAIT 417` per bit, `SETB`/`CLRB` on the TX pin | `test_uart_tx` |
+| UART 8N1 | receiver | 76.8 kbaud | `WAIT` to the bit centre, sample `ui_in` | `test_uart_rx` |
+| SPI | controller | modes 0–3, both clock polarities | drive SCK, sample on the active edge | `test_spi_master`, `test_spi_other_modes` |
+| SPI | target | mode 0 | `WAIT_EDGE` on SCK, shift on the pad | `test_spi_target` |
+| I2C | controller | ~100 kHz and ~386 kHz (156 and 38-clock half periods) | open-drain `uio`, `WAIT` per phase | `test_i2c_master`, `test_i2c_master_400k` |
+| I2C | target | 100 kHz and 400 kHz | open-drain ACK, edge waits on SCL | `test_i2c_target`, `test_i2c_target_400k` |
+| PS/2 | device | ~10.5 kHz (9 × `WAIT 167`) | open-drain clock and data, odd parity | `test_ps2_device` |
+| JTAG | master | TCK half period from `WAIT` | TAP walk to Shift-DR, 32-bit DR scan | `test_jtag_idcode` |
+| Capture | analyzer | every pin change, 8 entries deep | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO` | `test_capture`, `test_capture_overflow` |
+
+Both ends of UART, SPI and I2C are firmware. That is the flexibility claim made
+concrete: the hard part of either role is a program, not a hard macro. The price
+is that peak throughput is set by the instruction loop, so this design competes
+on exactness and reconfigurability, not on raw bit rate.
 
 ## ISA at a glance
 

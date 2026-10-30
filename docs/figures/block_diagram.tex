@@ -1,219 +1,216 @@
-% Proteus-1 block diagram.
+% Proteus-1 architecture figure.
 %
 % Build:  tectonic -X compile docs/figures/block_diagram.tex --outdir build/figures
 % The PNG used by the README is rasterised from the resulting PDF at 300 dpi.
 %
-% Schematic, but topologically faithful: every arrow is a net that exists in
-% src/tt_um_proteus.v and it starts and ends on the module port that drives or
-% samples it. `proteus_core` is a container because the PC, timer and capture
-% control are registers inside it rather than separate modules.
+% Vertical spine, top to bottom:
+%   host loader -> memories -> execute -> pins and capture -> pad ring
 %
-% Solid  = data path.
-% Dashed = control / enables / write strobes.
-\documentclass[border=0pt]{standalone}
+% Every connection is one straight stub in the gap between two stages, so no
+% wire crosses a card and no two wires cross. The run/reset trunk is the only
+% net that leaves the spine, and it runs in the right margin.
+%
+% Blue  = data path.  Amber = control, enable or write strobe.
+\documentclass[border=8pt]{standalone}
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning, calc}
+\usetikzlibrary{arrows.meta, calc}
 
-\definecolor{bg}{HTML}{08111F}
-\definecolor{boxfill}{HTML}{0E1C2F}
-\definecolor{boxedge}{HTML}{6EA8D4}
-\definecolor{ink}{HTML}{E8F2FB}
-\definecolor{muted}{HTML}{7FA3C4}
-\definecolor{stage}{HTML}{9DC4E0}
-\definecolor{bus}{HTML}{6EA8D4}
-\definecolor{ctrl}{HTML}{D9A066}
-\definecolor{grid}{HTML}{102031}
-\definecolor{rule}{HTML}{1E3450}
+\definecolor{bg}{HTML}{F7FAFD}
+\definecolor{card}{HTML}{FFFFFF}
+\definecolor{cardedge}{HTML}{CDD9E6}
+\definecolor{panel}{HTML}{EDF3FA}
+\definecolor{paneledge}{HTML}{C6D8EA}
+\definecolor{ink}{HTML}{1B2A3A}
+\definecolor{body}{HTML}{3C4E62}
+\definecolor{mod}{HTML}{7C90A6}
+\definecolor{hostc}{HTML}{2563EB}
+\definecolor{memc}{HTML}{0E7490}
+\definecolor{exec}{HTML}{6D28D9}
+\definecolor{pinc}{HTML}{C2410C}
+\definecolor{padc}{HTML}{15803D}
+\definecolor{datac}{HTML}{1D4ED8}
+\definecolor{ctrlc}{HTML}{B45309}
 
 \tikzset{
-  blk/.style={
-    draw=boxedge, fill=boxfill, rounded corners=3pt, line width=0.6pt,
-    text=ink, align=left, inner sep=3.5pt,
-    font=\ttfamily\scriptsize\linespread{0.92}\selectfont,
+  card/.style={
+    draw=cardedge, fill=card, line width=0.6pt, rounded corners=3pt,
+    text=body, align=left, inner sep=5pt,
+    font=\sffamily\scriptsize\linespread{1.25}\selectfont,
   },
-  sig/.style={font=\ttfamily\tiny, text=bus, inner sep=1.2pt},
-  sigc/.style={font=\ttfamily\tiny, text=ctrl, inner sep=1.2pt},
-  data/.style={draw=bus, line width=0.65pt, -{Latex[length=1.5mm,width=1.1mm]}},
-  ctl/.style={draw=ctrl, line width=0.65pt, dashed, dash pattern=on 2.0mm off 1.3mm,
-              -{Latex[length=1.5mm,width=1.1mm]}},
-  stagehead/.style={font=\ttfamily\scriptsize, text=stage, inner sep=0pt},
-  colrule/.style={draw=rule, line width=0.5pt, dash pattern=on 1.2mm off 1.8mm},
+  stage/.style={
+    draw=paneledge, fill=panel, line width=0.7pt, rounded corners=6pt, fill opacity=0.55,
+  },
+  sig/.style={font=\sffamily\scriptsize, text=datac, inner sep=1.6pt},
+  sigc/.style={font=\sffamily\scriptsize, text=ctrlc, inner sep=1.6pt},
+  data/.style={draw=datac, line width=0.85pt, -{Latex[length=1.6mm,width=1.3mm]}},
+  ctl/.style={draw=ctrlc, line width=0.85pt, dashed, dash pattern=on 2.2mm off 1.4mm,
+              -{Latex[length=1.6mm,width=1.3mm]}},
+  pill/.style={rounded corners=2.5pt, text=white, font=\sffamily\tiny\bfseries,
+               inner sep=3.2pt, anchor=west},
 }
+
+\newcommand{\mod}[1]{\textcolor{mod}{\ttfamily #1}}
+\newcommand{\ttl}[1]{\textcolor{ink}{\sffamily\bfseries #1}}
 
 \begin{document}
 \begin{tikzpicture}[x=1cm, y=1cm]
 
-% ---------------------------------------------------------------- background
-\path[use as bounding box] (0,0) rectangle (26.4,14.8);
-\fill[bg] (0,0) rectangle (26.4,14.8);
-\foreach \x in {0,1,...,26} \draw[draw=grid, line width=0.35pt] (\x,0) -- (\x,14.8);
-\foreach \y in {0,1,...,14} \draw[draw=grid, line width=0.35pt] (0,\y) -- (26.4,\y);
+\path[use as bounding box] (0,2.18) rectangle (15.7,22.9);
+\fill[bg] (0,2.18) rectangle (15.7,22.9);
 
-% -------------------------------------------------------------------- titles
-\node[anchor=north west, font=\ttfamily\bfseries\Large, text=ink, inner sep=0pt]
-  at (0.45,14.62) {PROTEUS-1};
-\node[anchor=north west, font=\ttfamily\tiny, text=muted, inner sep=0pt]
-  at (0.47,14.08) {FIELD-REPROGRAMMABLE PROTOCOL ENGINE \textbar{} 6x4 SG13CMOS5L \textbar{} 32 MHz};
-\node[anchor=north east, font=\ttfamily\scriptsize, text=stage, inner sep=0pt]
-  at (25.95,14.52) {ONE CLOCK DOMAIN};
-\node[anchor=north east, font=\ttfamily\tiny, text=muted, inner sep=0pt]
-  at (25.95,14.12) {every ordinary instruction retires in 1 clock};
+% ---------------------------------------------------------------------- header
+\node[anchor=north west, font=\sffamily\bfseries\Large, text=ink, inner sep=0pt]
+  at (1.15,22.72) {Proteus-1 hardware};
+\node[anchor=north west, font=\sffamily\scriptsize, text=body, inner sep=0pt]
+  at (1.17,22.22) {one 8-bit core, two memories, 24 pins, 32 MHz};
+\node[anchor=north east, font=\sffamily\tiny, text=mod, inner sep=0pt]
+  at (14.35,22.30) {6x4 SG13CMOS5L};
 
-% ------------------------------------------------------------ stage headings
-\draw[draw=rule, line width=0.5pt] (0.40,13.46) -- (25.95,13.46);
-\foreach \x/\name in {
-  2.55/CONFIG, 6.55/FETCH, 11.10/EXECUTE, 15.65/MEMORY, 19.25/PINS, 23.75/CAPTURE} {
-  \node[stagehead] at (\x,13.66) {\name};
-}
-\foreach \x in {4.70, 8.55, 14.05, 17.30, 21.60} {
-  \draw[colrule] (\x,13.38) -- (\x,1.30);
-}
-\node[rotate=90, font=\ttfamily\tiny, text=muted, inner sep=0pt, anchor=center]
-  at (0.17,10.4) {CONTROL};
-\node[rotate=90, font=\ttfamily\tiny, text=muted, inner sep=0pt, anchor=center]
-  at (0.17,4.4) {DATA PATH};
+\draw[draw=datac, line width=0.85pt, -{Latex[length=1.6mm,width=1.3mm]}] (1.15,21.80) -- (1.95,21.80);
+\node[sig, anchor=west] at (2.05,21.80) {data};
+\draw[ctl] (3.55,21.80) -- (4.35,21.80);
+\node[sigc, anchor=west] at (4.45,21.80) {control / enable / write};
 
-% ------------------------------------------------------------------- CONFIG
-\node[blk, anchor=north west, text width=2.80cm, minimum height=1.90cm] (cfg) at (0.78,13.30)
-  {\textbf{CFG SPI TARGET}\\[1pt]\textcolor{muted}{proteus\_loader}\\[2pt]
-   32-bit frame\\ \{cmd, addr, data\}};
+% ============================================================= stage 1: the host
+\node[pill, fill=hostc] at (1.15,21.42) {HOST};
+\draw[stage] (1.15,19.95) rectangle (14.35,21.25);
 
-\node[blk, anchor=north west, text width=2.80cm, minimum height=1.45cm] (run) at (0.78,10.40)
-  {\textbf{RUN / RESET}\\[2pt]run bit (cmd 0x03)\\ core held while CS\_N};
+\node[card, anchor=north west, text width=12.40cm, minimum height=1.05cm] (loader) at (1.35,21.10)
+  {\ttl{CFG SPI target}\quad{\mod{proteus\_loader}}\\[1pt]
+   32-bit frames of command, address and data, MSB first, with MISO readback.\\
+   Writes program words, data bytes and the run bit; the core stays in reset while run = 0.};
 
-\node[blk, anchor=north west, text width=2.80cm, minimum height=1.45cm] (shift) at (0.78,8.45)
-  {\textbf{FRAME SHIFTER}\\[2pt]32-bit shift\\ MISO readback (0x04)};
+% =============================================================== stage 2: memory
+\node[pill, fill=memc] at (1.15,18.98) {MEMORY};
+\draw[stage] (1.15,17.30) rectangle (14.35,18.80);
 
-% -------------------------------------------------------------------- FETCH
-\node[blk, anchor=north west, text width=2.45cm, minimum height=1.65cm] (prog) at (5.05,13.10)
-  {\textbf{PROGRAM RAM}\\[1pt]\textcolor{muted}{proteus\_prog\_ram}\\[2pt]
-   128 x 16\\ async read};
+\node[card, anchor=north west, text width=5.50cm, minimum height=1.10cm] (prog) at (1.35,18.65)
+  {\ttl{Program RAM}\quad{\mod{proteus\_prog\_ram}}\\[1pt]
+   128 $\times$ 16, asynchronous read};
 
-% ---------------------------------------------------- EXECUTE: core container
-\draw[draw=boxedge, line width=0.8pt, rounded corners=7pt, fill=boxfill, fill opacity=0.35]
-  (8.85,3.55) rectangle (13.40,13.35);
-\node[font=\ttfamily\tiny, text=muted, anchor=south] at (11.10,3.62)
-  {proteus\_core \textbar{} one instruction per enabled clock};
+\node[card, anchor=north west, text width=5.50cm, minimum height=1.10cm] (dram) at (8.05,18.65)
+  {\ttl{Data RAM}\quad{\mod{proteus\_data\_ram}}\\[1pt]
+   64 $\times$ 8, direct and X-indexed};
 
-\node[blk, anchor=north west, text width=1.55cm, minimum height=1.55cm] (pcstack) at (9.00,12.95)
-  {\textbf{PC + STACK}\\[2pt]pc[6:0]\\ 8-deep\\ CALL / RET};
+% ============================================================== stage 3: execute
+\node[pill, fill=exec] at (1.15,16.32) {EXECUTE};
+\draw[stage] (1.15,9.95) rectangle (14.35,16.15);
+\node[font=\sffamily\tiny, text=mod, anchor=south west] at (1.35,10.02)
+  {proteus\_core \textbar{} no pipeline, no hidden wait states};
 
-\node[blk, anchor=north west, text width=2.05cm, minimum height=1.55cm] (decode) at (10.75,12.95)
-  {\textbf{DECODE}\\[2pt]5-bit opcode\\ 3-bit subop\\ 1-cycle retire};
+\node[card, anchor=north west, text width=5.30cm, minimum height=1.00cm] (pcstk) at (1.35,15.85)
+  {\ttl{PC + stack}\quad{\mod{pc[6:0]}}\\[1pt]
+   8-deep return stack, CALL and RET};
 
-\node[blk, anchor=north west, text width=4.15cm, minimum height=1.30cm] (alu) at (9.00,11.15)
-  {\textbf{ALU + REGISTERS}\quad A X Y\quad Z C N\\ add, sub, logic, shift};
+\node[card, anchor=north west, text width=6.15cm, minimum height=1.00cm] (decode) at (7.35,15.85)
+  {\ttl{Decode}\\[1pt]
+   5-bit opcode, 3-bit subop, one-clock retire};
 
-\node[blk, anchor=north west, text width=4.15cm, minimum height=1.00cm] (timer) at (9.00,9.55)
-  {\textbf{TIMER 16-bit}\quad free running\\ atomic low / high read};
+\node[card, anchor=north west, text width=12.30cm, minimum height=0.90cm] (alu) at (1.35,14.55)
+  {\ttl{ALU + registers}\quad{\mod{A, X, Y, Z, C, N}}\\[1pt]
+   add, sub, logic, shift and bit operations};
 
-\node[blk, anchor=north west, text width=4.15cm, minimum height=1.10cm] (wait) at (9.00,8.15)
-  {\textbf{PIN WAIT + EDGE}\quad WAIT n\\ WAIT\_PIN0/1\quad WAIT\_EDGE};
+\node[card, anchor=north west, text width=5.30cm, minimum height=1.00cm] (timer) at (1.35,13.30)
+  {\ttl{Timer}\quad{\mod{16-bit}}\\[1pt]
+   free running, atomic low and high read};
 
-\node[blk, anchor=north west, text width=4.15cm, minimum height=1.00cm] (capctl) at (9.00,6.45)
-  {\textbf{CAPTURE CONTROL}\\ CAP\_EN, CAP\_POP, CAP\_STATUS};
+\node[card, anchor=north west, text width=6.15cm, minimum height=1.00cm] (wait) at (7.35,13.30)
+  {\ttl{Pin wait + edge}\quad{\mod{WAIT, WAIT\_PIN, WAIT\_EDGE}}\\[1pt]
+   stall on a masked pin level or on an edge};
 
-% ------------------------------------------------------------------- MEMORY
-\node[blk, anchor=north west, text width=2.15cm, minimum height=1.90cm] (dram) at (14.85,10.60)
-  {\textbf{DATA RAM}\\[1pt]\textcolor{muted}{proteus\_data\_ram}\\[2pt]
-   64 x 8\\ direct +\\ X-indexed};
+\node[card, anchor=north west, text width=12.30cm, minimum height=0.85cm] (capctl) at (1.35,12.05)
+  {\ttl{Capture control}\quad{\mod{CAP\_EN, CAP\_POP, CAP\_STATUS}}\\[1pt]
+   pin changes recorded with a timestamp};
 
-% --------------------------------------------------------------------- PINS
-\node[blk, anchor=north west, text width=2.80cm, minimum height=2.15cm] (pinreg) at (17.65,13.10)
-  {\textbf{PIN REGISTERS}\\[2pt]uo\_out[7:0]\\ uio\_out[7:0]\\ uio\_oe[7:0]\\ uio\_od[7:0]};
+% ==================================================== stage 4: pins and capture
+\node[pill, fill=pinc] at (1.15,8.55) {PINS};
+\draw[stage] (1.15,5.10) rectangle (14.35,8.40);
 
-\node[blk, anchor=north west, text width=2.80cm, minimum height=1.45cm] (sync) at (17.65,9.95)
-  {\textbf{2-FF SYNC}\\[2pt]ui\_in\quad uio\_in\\ asynchronous pins};
+\node[card, anchor=north west, text width=5.30cm, minimum height=1.15cm] (pinreg) at (1.35,8.15)
+  {\ttl{Pin registers}\\{\mod{uo\_out, uio\_out, uio\_oe, uio\_od}}\\[1pt]
+   per-bit output enable and open drain};
 
-\node[blk, anchor=north west, text width=2.80cm, minimum height=1.95cm] (pads) at (17.65,5.65)
-  {\textbf{PAD RING}\\[1pt]\textcolor{muted}{from the shuttle}\\[2pt]
-   8 in\quad 8 out\\ 8 bidirectional\\ per-bit OE / OD};
+\node[card, anchor=north west, text width=6.15cm, minimum height=1.15cm] (sync) at (7.75,8.15)
+  {\ttl{2-FF synchroniser}\quad{\mod{ui\_in, uio\_in}}\\[1pt]
+   asynchronous pads sampled by two flops};
 
-% ------------------------------------------------------------------ CAPTURE
-\node[blk, anchor=north west, text width=3.15cm, minimum height=1.50cm] (edge) at (21.75,13.05)
-  {\textbf{EDGE DETECT}\\[2pt]any pin change\\ vs last\_pins};
+\node[card, anchor=north west, text width=5.30cm, minimum height=1.15cm] (edge) at (1.35,6.35)
+  {\ttl{Edge detect}\\[1pt]
+   any pin change against {\mod{last\_pins}}};
 
-\node[blk, anchor=north west, text width=3.15cm, minimum height=1.95cm] (fifo) at (21.75,11.30)
-  {\textbf{CAPTURE FIFO}\\[1pt]\textcolor{muted}{proteus\_capture}\\[2pt]
-   8 x 24 entries\\ \{timer[7:0],\\ \phantom{\{}uio\_in, ui\_in\}};
+\node[card, anchor=north west, text width=6.15cm, minimum height=1.15cm] (fifo) at (7.75,6.35)
+  {\ttl{Capture FIFO}\quad{\mod{proteus\_capture}}\\[1pt]
+   8 $\times$ 24 entries, status full and count};
 
-\node[blk, anchor=north west, text width=1.50cm, minimum height=1.20cm] (status) at (21.75,8.95)
-  {\textbf{STATUS}\\[2pt]full, count};
+% ================================================================ stage 5: pads
+\node[pill, fill=padc] at (1.15,4.78) {PADS};
+\draw[stage] (1.15,2.30) rectangle (14.35,4.60);
 
-% ===================================================================== nets ==
+\node[card, anchor=north west, text width=12.30cm, minimum height=2.00cm] (pads) at (1.35,4.45)
+  {\ttl{Pad ring}\quad{\mod{the 24 pins to the shuttle}}\\[1pt]
+   8 {\mod{ui\_in}}, 8 {\mod{uo\_out}} and 8 {\mod{uio}} with per-bit output enable and
+   open-drain mode.\\
+   The loader and every protocol image in the repository share these pins after reset.};
 
-% 1. loader program write port -> program RAM
-\draw[ctl] (cfg.east) -- (4.50,12.40) -- (4.50,11.90) -- (prog.west |- 0,11.90);
-\node[sigc, rotate=-90, anchor=center] at (4.30,11.15) {write port};
+% ======================================================================== nets
 
-% 2. loader data write port (cmd 0x02) -> data RAM along the bottom channel
-\draw[ctl] (shift.south) -- (2.40,8.10) -- (2.40,2.70) -- (15.90,2.70) -- (15.90,8.70);
-\node[sigc, anchor=south] at (8.80,2.78) {data byte write (cmd 0x02)};
+% loader -> program memory
+\draw[ctl] (3.95,19.95) -- (3.95,18.65);
+\node[sigc, anchor=west] at (4.10,19.32) {program word};
 
-% 3. run / cfg_busy -> core, entering over the top edge
-\draw[ctl] (run.north) -- (2.40,13.02) -- (11.10,13.02) -- (11.10,13.35);
-\node[sigc, anchor=south] at (6.20,13.08) {run / cfg\_busy};
+% loader -> data memory
+\draw[ctl] (10.75,19.95) -- (10.75,18.65);
+\node[sigc, anchor=west] at (10.90,19.32) {data byte, command 0x02};
 
-% 4. core pc -> program RAM read address
-\draw[data] (8.85,12.78) -- (7.55,12.78);
-\node[sig, anchor=north] at (8.18,12.70) {pc[6:0]};
+% program memory -> execute
+\draw[data] (3.95,17.30) -- (3.95,15.85);
+\node[sig, anchor=west] at (4.10,16.55) {instr[15:0]};
 
-% 5. program RAM -> core instruction
-\draw[data] (7.55,11.70) -- (8.30,11.70) -- (8.30,12.28) -- (8.85,12.28);
-\node[sig, rotate=-90, anchor=center] at (8.55,12.05) {instr[15:0]};
+% execute -> data memory
+\draw[data] (9.35,16.15) -- (9.35,17.30);
+\node[sig, anchor=east] at (9.20,16.72) {addr, we, wdata};
 
-% 6. core -> pin registers (output side)
-\draw[data] (13.40,12.55) -- (17.65,12.55);
-\node[sig, anchor=south] at (15.50,12.62) {uo\_out, uio\_out, uio\_oe, uio\_od};
+% data memory -> execute
+\draw[data] (12.35,17.30) -- (12.35,16.15);
+\node[sig, anchor=west] at (12.50,16.72) {rdata[7:0]};
 
-% 7. pin registers -> pad ring (right-hand lane A)
-\draw[data] (pinreg.east) -- (21.10,12.00) -- (21.10,4.80) -- (pads.east |- 0,4.80);
-\node[sig, rotate=-90, anchor=center] at (21.18,8.92) {pad out, OE, OD};
+% execute -> pin registers
+\draw[data] (3.95,9.95) -- (3.95,8.15);
+\node[sig, anchor=east, align=right] at (3.80,9.62) {uo\_out, uio\_out,\\ uio\_oe, uio\_od};
 
-% 8. pad ring -> 2-FF sync -> core (input side)
-\draw[data] (19.25,5.65) -- (19.25,8.50);
-\node[sig, anchor=west] at (19.34,7.10) {in};
-\draw[data] (sync.west) -- (17.15,9.10) -- (17.15,7.90) -- (13.40,7.90);
-\node[sig, anchor=south] at (15.20,7.98) {ui\_in $\cdot$ uio\_in};
+% synchroniser -> execute
+\draw[data] (9.85,8.15) -- (9.85,9.95);
+\node[sig, anchor=east] at (9.70,9.60) {ui\_in, uio\_in};
 
-% 9. core <-> data RAM
-\draw[data] (13.40,10.30) -- (14.85,10.30);
-\draw[data] (14.85,9.60) -- (13.40,9.60);
-\node[sig, anchor=east] at (14.70,10.42) {addr/we/wdata};
-\node[sig, anchor=east] at (14.70,9.48) {rdata[7:0]};
+% execute -> capture fifo
+\draw[data] (12.85,9.95) -- (12.85,8.15);
+\node[sig, anchor=east, align=right] at (12.70,9.55) {timer,\\ CAP\_EN};
 
-% 10. core timer -> capture FIFO timestamp
-\draw[data] (13.40,8.90) -- (14.20,8.90) -- (14.20,6.25) -- (21.50,6.25) -- (21.50,10.90) -- (21.75,10.90);
-\node[sig, anchor=south] at (17.10,6.33) {timer[7:0]};
+% capture fifo -> execute
+\draw[data] (11.55,8.15) -- (11.55,9.95);
+\node[sig, anchor=east] at (11.40,9.24) {CAP\_UI};
 
-% 11. capture FIFO -> core popped entry
-\draw[data] (21.75,10.10) -- (17.15,10.10) -- (17.15,7.35) -- (13.40,7.35);
-\node[sig, anchor=north] at (15.60,7.27) {CAP\_UI / CAP\_UIO};
+% pin registers -> pad ring, down the left margin
+\draw[data] (1.35,7.55) -- (0.92,7.55) -- (0.92,4.30) -- (1.35,4.30);
+\node[sig, rotate=90, anchor=south] at (0.80,6.05) {pad out, OE, OD};
 
-% 12. core -> capture FIFO enable / pop, along the bottom channel
-\draw[ctl] (13.40,4.20) -- (14.25,4.20) -- (14.25,3.10) -- (23.60,3.10) -- (23.60,11.30);
-\node[sigc, anchor=south] at (9.40,3.18) {CAP\_EN / CAP\_POP};
+% pad ring -> edge detect
+\draw[data] (5.15,4.45) -- (5.15,6.35);
+\node[sig, anchor=west] at (5.30,4.82) {pads};
 
-% 13. pad ring -> edge detect (right-hand lane B)
-\draw[data] (pads.east |- 0,4.35) -- (21.36,4.35) -- (21.36,12.30) -- (21.75,12.30);
-\node[sig, rotate=-90, anchor=center] at (21.44,6.90) {pins};
+% pad ring -> synchroniser, up the right margin
+\draw[data] (13.88,4.45) -- (14.62,4.45) -- (14.62,8.00) -- (13.88,8.00);
+\node[sig, anchor=east] at (13.75,4.82) {ui\_in, uio\_in};
 
-% 14. edge detect -> FIFO -> status
-\draw[data] (23.55,11.50) -- (23.55,11.30);
-\draw[data] (22.55,9.35) -- (22.55,8.95);
-\node[sig, anchor=west] at (22.64,9.14) {full, count};
+% edge detect -> capture fifo
+\draw[data] (6.65,5.75) -- (7.75,5.75);
 
-% ------------------------------------------------------------------- legend
-\draw[data] (0.78,0.92) -- (1.58,0.92);
-\node[sig, anchor=west] at (1.65,0.92) {data / bus};
-\draw[ctl] (3.95,0.92) -- (4.75,0.92);
-\node[sigc, anchor=west] at (4.82,0.92) {control / enable / write};
-\node[font=\ttfamily\tiny, text=muted, anchor=west] at (8.10,0.92)
-  {WAIT, WAIT\_PIN, WAIT\_EDGE and HALT are the only instructions that hold the PC};
-\node[font=\ttfamily\tiny, text=stage, anchor=east] at (25.95,0.92) {protocol = firmware};
+% run and reset trunk, in the right margin
+\draw[ctl, rounded corners=6pt] (14.35,20.60) -- (15.15,20.60) -- (15.15,12.55) -- (14.35,12.55);
+\node[sigc, rotate=90, anchor=south] at (15.28,16.60) {run, cfg\_busy};
 
 \end{tikzpicture}
 \end{document}
