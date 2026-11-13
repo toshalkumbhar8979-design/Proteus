@@ -7,7 +7,7 @@ the status column only with evidence; do not tick an item because it is planned.
 |---|---|---|
 | Public open-source repository | this repository, Apache-2.0 | **done (public GitHub repository)** |
 | RTL for a reprogrammable protocol emulator | `src/` | **done** |
-| 6×4 tile allocation | `info.yaml` (`tiles: "6x4"`) | **done** |
+| 8×4 tile allocation (the rules' maximum) | `info.yaml` (`tiles: "8x4"`) | **done** (8×4 re-hardening in CI) |
 | IHP CMOS5L target | `info.yaml`, `src/config.json`, `.github/workflows/gds.yaml` | **done** |
 | Architecture documentation | `docs/architecture.md` | **done** |
 | Instruction-set documentation | `docs/isa.md` | **done** |

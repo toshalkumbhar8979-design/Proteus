@@ -96,6 +96,11 @@ instructions, so the warning is intentional rather than suppressed.
 
 ## 4. Hardened build
 
+> The numbers in this section come from the last completed **6×4** hardening.
+> The design now declares the competition's **8×4** allocation (D-023); the 8×4
+> run replaces these figures when it finishes. The RTL is unchanged by the
+> switch: same six modules, same clock, same mapped cell count.
+
 The Tiny Tapeout GDS action hardened the design on commit `abbebf2` and produced
 a GDS, LEF, SPEF, and OASIS for the 6×4 SG13CMOS5L allocation. Run:
 `actions/runs/40903018243`. This is the authority for the numbers below; the

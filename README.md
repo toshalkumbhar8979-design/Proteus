@@ -1,7 +1,7 @@
 # Proteus-1
 
 **A field-reprogrammable protocol engine for the Jane Street × Tiny Tapeout ASIC
-competition.** One 6×4 CMOS5L tile set, reprogrammable after fabrication, with
+competition.** One 8×4 CMOS5L tile set, reprogrammable after fabrication, with
 an assembler, a cycle-accurate ISS, and a cocotb verification suite.
 
 Proteus-1 is not a bag of fixed UART, SPI, and I2C peripherals. It is a
@@ -48,7 +48,7 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Cocotb tests | **21/21 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow, opcode sweep, co-simulation) |
 | RTL vs ISS | all 96 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
-| Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells, 34% of the nominal 6×4 area |
+| Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells: 34% of the nominal 6×4 area, 26% of the 8×4 allocation |
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
@@ -236,7 +236,8 @@ green; the competition's submission form has not been opened yet.
 - [Tiny Tapeout IHP template](https://github.com/TinyTapeout/ttihp-verilog-template)
 - [IHP Open PDK](https://github.com/IHP-GmbH/IHP-Open-PDK)
 
-Target: 6×4 tiles, IHP SG13CMOS5L, March 2027 shuttle, deadline 2027-01-18.
+Target: 8×4 tiles (the rules' maximum), IHP SG13CMOS5L, March 2027 shuttle,
+deadline 2027-01-18.
 
 ## License
 

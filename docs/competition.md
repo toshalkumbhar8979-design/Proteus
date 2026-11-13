@@ -119,6 +119,11 @@ the nominal 6×4 tile area, with no latches and no multiply/divide cells. The
 256-word program memory was measured at 56% and rejected; the trade-off is
 documented rather than hidden.
 
+The submission declares the competition's **8×4** allocation, where the same
+mapped cells occupy 26% of the nominal tile area. The hardened figures below are
+the last completed **6×4** run and are kept as the baseline until the 8×4 build
+signs off.
+
 The design is hardened, not just synthesized. The Tiny Tapeout GDS action
 ([run 40903018243](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/40903018243))
 produced a clean 6×4 SG13CMOS5L layout: 383,307 µm² of placed cells in a
