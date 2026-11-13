@@ -13,7 +13,7 @@ instruction set is built around pins, edges, and exact cycle counts.
 - **Exact timing instructions**: `WAIT n` burns exactly `n` clocks (0 = 256),
   `WAIT_PIN0/1` and `WAIT_EDGE` stall on a masked pin level or edge.
 - **16-bit cycle counter** with an atomic low/high read sequence.
-- **8-entry capture FIFO** that records `{timer[7:0], uio_in, ui_in}` on every
+- **32-entry capture FIFO** that records `{timer[7:0], uio_in, ui_in}` on every
   pin change, so the chip can observe a bus as well as drive it.
 - **SPI host loader** on `ui_in[7:5]`, status/readback on `uo_out[7]`.
 

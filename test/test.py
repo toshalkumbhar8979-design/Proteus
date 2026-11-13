@@ -455,7 +455,7 @@ async def i2c_target_model(dut, expected_addr: int = 0x50, expected_data: int = 
 
 @cocotb.test()
 async def test_capture_overflow(dut):
-    """More than eight pin changes must assert full and drop new entries."""
+    """More than 32 pin changes must assert full and drop new entries."""
     src = """
         CAP_EN 1
         WAIT_PIN1 UI, 0x02
@@ -468,16 +468,54 @@ async def test_capture_overflow(dut):
     await load_image(dut, image)
     await ClockCycles(dut.clk, 5)
 
-    # Ten toggles of ui[0] fill the eight-entry FIFO; the ninth and tenth are
-    # dropped. Then ui[1] releases the firmware to read the status byte.
-    for i in range(10):
+    # 34 toggles of ui[0] fill the 32-entry FIFO; the last two are dropped.
+    # Then ui[1] releases the firmware to read the status byte.
+    for i in range(34):
         dut.ui_in.value = ui_word(1, 0, 0, low=(0x01 if i % 2 == 0 else 0x00))
         await ClockCycles(dut.clk, 3)
     dut.ui_in.value = ui_word(1, 0, 0, low=0x02)
 
-    await wait_for_uo(dut, 0x88, limit=5000)
+    await wait_for_uo(dut, 0xA0, limit=9000)
     status = int(dut.uo_out.value)
-    assert status == 0x88, f"capture status 0x{status:02X}, expected full+8"
+    assert status == 0xA0, f"capture status 0x{status:02X}, expected full+32"
+
+
+@cocotb.test()
+async def test_capture_roll(dut):
+    """Roll mode keeps the newest 32 edges instead of dropping new ones."""
+    src = """
+        CAP_CLR
+        CAP_EN 3
+        WAIT_PIN1 UI, 0x08
+        CAP_STATUS
+        OUT UO, A
+        CAP_POP
+        CAP_UI
+        OUT UO, A
+        OUT UO, 0xAA
+        HALT
+    """
+    image = assemble(src)
+    await reset_dut(dut)
+    await load_image(dut, image)
+    await ClockCycles(dut.clk, 5)
+
+    # Phase 1: eight changes with ui[1] low. Phase 2: forty changes with ui[1]
+    # high. That is 49 events into a 32-entry buffer, so if the buffer rolled the
+    # phase-1 entries must be gone and the oldest survivor must carry ui[1].
+    for i in range(8):
+        dut.ui_in.value = ui_word(1, 0, 0, low=(0x01 if i % 2 == 0 else 0x00))
+        await ClockCycles(dut.clk, 3)
+    for i in range(40):
+        dut.ui_in.value = ui_word(1, 0, 0, low=0x02 | (0x01 if i % 2 == 0 else 0x00))
+        await ClockCycles(dut.clk, 3)
+    dut.ui_in.value = ui_word(1, 0, 0, low=0x0A)
+
+    seen = await collect_uo_changes(dut, 0xAA, limit=9000)
+    assert len(seen) == 3, f"roll outputs {[hex(x) for x in seen]}"
+    assert seen[0] == 0xA0, f"roll status 0x{seen[0]:02X}, expected full+32"
+    assert seen[1] & 0x02, f"oldest retained ui byte 0x{seen[1]:02X} is from phase 1"
+    assert seen[2] == 0xAA, f"roll sentinel 0x{seen[2]:02X}"
 
 
 @cocotb.test()
@@ -744,6 +782,7 @@ def core_matches_iss(core, iss) -> tuple[bool, str]:
         ("wait", int(core.wait_active.value), int(iss.wait_active)),
         ("halt", int(core.halt.value), int(iss.halt)),
         ("cap_count", int(core.u_capture.count.value), iss.cap_count),
+        ("cap_mode", int(core.u_capture.cap_mode.value), iss.cap_mode),
     ]
     for name, rtl, model in pairs:
         if rtl != model:

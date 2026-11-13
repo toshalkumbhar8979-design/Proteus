@@ -177,12 +177,13 @@ module proteus_core #(
   wire cap_pop     = cap_insn && (sub == 3'd1);
   wire cap_clear   = cap_insn && (sub == 3'd6);
   wire cap_en_val  = imm[0];
+  wire cap_roll_val = imm[1];
 
   wire [23:0] cap_head;
   wire [7:0]  cap_status;
 
   proteus_capture #(
-      .CAP_AW(3)
+      .CAP_AW(5)
   ) u_capture (
       .clk       (clk),
       .rst_n     (rst_n),
@@ -191,6 +192,7 @@ module proteus_core #(
       .timestamp (timer[7:0]),
       .set_en    (cap_set_en),
       .en_val    (cap_en_val),
+      .roll_val  (cap_roll_val),
       .pop       (cap_pop),
       .clear     (cap_clear),
       .head_data (cap_head),

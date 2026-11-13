@@ -28,7 +28,7 @@ Protocol emulation is a **timing** problem, not a peripheral checklist.
 - `WAIT_PIN0/1` and `WAIT_EDGE` stall on a masked pin level or edge.
 - `SETB` / `CLRB` / `TGLB` change pins without touching the accumulator.
 - A 16-bit cycle counter timestamps every capture.
-- The 8-entry capture FIFO records `{timer[7:0], uio_in, ui_in}` on every pin
+- The 32-entry capture FIFO records `{timer[7:0], uio_in, ui_in}` on every pin
   change, so the same chip can **observe** a bus as well as drive it.
 - Each bidirectional pin has output enable **and open-drain** control, which is
   what I2C, wired-OR buses, and target-role emulation need.
@@ -45,7 +45,7 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **21/21 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow, opcode sweep, co-simulation) |
+| Cocotb tests | **22/22 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, opcode sweep, co-simulation) |
 | RTL vs ISS | all 96 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells: 34% of the nominal 6×4 area, 26% of the 8×4 allocation |
@@ -88,7 +88,7 @@ hand-written waveform.
 | I2C | target | 100 kHz and 400 kHz | open-drain ACK, edge waits on SCL | `test_i2c_target`, `test_i2c_target_400k` |
 | PS/2 | device | ~10.5 kHz (9 × `WAIT 167`) | open-drain clock and data, odd parity | `test_ps2_device` |
 | JTAG | master | TCK half period from `WAIT` | TAP walk to Shift-DR, 32-bit DR scan | `test_jtag_idcode` |
-| Capture | analyzer | every pin change, 8 entries deep | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO` | `test_capture`, `test_capture_overflow` |
+| Capture | analyzer | every pin change, 32 entries deep; FIFO or roll mode | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO` | `test_capture`, `test_capture_overflow`, `test_capture_roll` |
 
 Both ends of UART, SPI and I2C are firmware. That is the flexibility claim made
 concrete: the hard part of either role is a program, not a hard macro. The price
@@ -170,7 +170,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 21 tests
+# RTL simulation: 22 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B

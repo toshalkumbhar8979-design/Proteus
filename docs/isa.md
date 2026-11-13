@@ -16,7 +16,7 @@ disagree, that is a bug; fix one of them in the same commit.
 | Program memory | 128 × 16 bits | Loaded by host; 7-bit address |
 | Data memory | 64 × 8 bits | Byte-addressed; `X[5:0]` or direct `imm[5:0]` |
 | Cycle counter | 16 bits | Free-running when the core is enabled |
-| Capture FIFO | 8 × 24 bits | `{cycle[7:0], uio_in[7:0], ui_in[7:0]}` |
+| Capture | 32 × 24 bits | `{cycle[7:0], uio_in[7:0], ui_in[7:0]}` |
 
 All ordinary instructions retire in **one enabled clock**. The only instructions
 that hold `PC` are `WAIT`, `WAIT_PIN0/1`, `WAIT_EDGE`, and `HALT`.
@@ -221,20 +221,23 @@ increments once per enabled clock. It is cleared by core reset and `TMR_CLR`.
 
 | sub | Mnemonic | Operation |
 |---|---|---|
-| 0 | `CAP_EN imm` | `cap_en ← imm[0]`; enabling resets the edge detector |
+| 0 | `CAP_EN imm` | `cap_en ← imm[0]`; roll mode ← `imm[1]`; enabling resets the edge detector |
 | 1 | `CAP_POP` | `cap_rd ← oldest entry`; advance read pointer |
 | 2 | `CAP_UI` | `A ← cap_rd[7:0]` (ui_in byte) |
 | 3 | `CAP_UIO` | `A ← cap_rd[15:8]` (uio_in byte) |
 | 4 | `CAP_TS` | `A ← cap_rd[23:16]` (cycle timestamp) |
-| 5 | `CAP_STATUS` | `A ← {full, empty, 4'b0, count[3:0]}` |
+| 5 | `CAP_STATUS` | `A ← {full, empty, count[5:0]}` |
 | 6 | `CAP_CLR` | clear FIFO, pointers, and `cap_rd` |
 | 7 | reserved | no effect |
 
 The capture engine samples `{uio_in, ui_in}` every enabled clock while
 `cap_en=1`. Whenever the 16-bit pin vector differs from the previous sample, it
-pushes `{timer[7:0], uio_in, ui_in}`. The FIFO holds 8 entries; new events are
-dropped when full. `CAP_POP` on an empty FIFO is a no-op (the previous `cap_rd`
-is retained). `CAP_STATUS` bits: `[7]=full`, `[6]=empty`, `[3:0]=count`.
+pushes `{timer[7:0], uio_in, ui_in}`. The buffer holds 32 entries. In the default
+FIFO mode (`imm[1]=0`) new events are dropped once it is full; in roll mode
+(`imm[1]=1`, written `CAP_EN 3`) the oldest entry is overwritten instead, so when
+the program stops the buffer holds the last 32 edges before the stop. `CAP_POP`
+on an empty buffer is a no-op (the previous `cap_rd` is retained). `CAP_STATUS`
+bits: `[7]=full`, `[6]=empty`, `[5:0]=count`.
 
 `CAP_POP` and the subsequent `CAP_UI/UIO/TS` are separated by one instruction
 boundary; the popped value is available to the next instruction.

@@ -47,7 +47,7 @@ enable bit and an open-drain bit. The pad driver is disabled when the pin is
 released, so I2C and wired-OR buses need no external glue and no board hack.
 Target-role I2C is firmware, not a special case in silicon.
 
-**The emulator can observe.** The capture FIFO records pin transitions with
+**The emulator can observe.** The capture FIFO records 32 pin transitions with
 8-bit timestamps while the CPU runs. The same chip that drives a bus can capture
 it, drain the FIFO, and decode or replay the waveform. That is the "protocol
 analyzer" half of the tool, and it is useful before a protocol is understood
@@ -79,7 +79,7 @@ All of these run on the RTL through the real loader and are checked by cocotb:
 | JTAG 1149.1 | Master | TAP reset, 32 TCK, Shift-DR, `0x1A5A5A5D` IDCODE clocked out and checked |
 | I2C ~100 kHz, address `0x50` | Target | Address match, ACK, data `0x42` |
 | I2C ~400 kHz, address `0x50` | Target | Same target with 80-clock SCL periods |
-| Capture FIFO | Analyzer | Timestamped pin changes drained in order |
+| Capture FIFO | Analyzer | 32 timestamped pin changes, drained in order, FIFO or roll mode |
 | Pin waits | Timing | Level and edge stalls released exactly |
 
 Both ends of UART, SPI, and I2C are implemented in firmware. That matters for
@@ -91,7 +91,7 @@ hard part of either role.
 The verification story is the part most likely to decide a close competition.
 Proteus-1 uses three independent layers:
 
-1. **Directed cocotb tests through the loader.** Twenty-one tests drive real
+1. **Directed cocotb tests through the loader.** Twenty-two tests drive real
    frames, real pin waveforms, and real bus models. They check what a scope
    would see, not internal signals.
 2. **Exhaustive and randomized RTL/ISS lock-step.** Every opcode/subop pair in
@@ -175,7 +175,7 @@ the author's.
 ## Reproduce it
 
 ```sh
-cd test && make -B                              # 21 RTL tests
+cd test && make -B                              # 22 RTL tests
 python3 -m pytest -q tools/test_isa.py          # 7 toolchain tests
 ./scripts/build_programs.sh                     # all example images
 ./scripts/formal.sh                             # 6 proven invariants

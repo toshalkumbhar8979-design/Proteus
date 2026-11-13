@@ -79,7 +79,13 @@ class ProteusISS:
         self.wait_ref = 0
         self.cap_rd = 0
         self.cap_en = 0
-        self.cap_mem: list[CaptureEntry] = [CaptureEntry(0, 0) for _ in range(8)]
+        # 32 entries is the most the status byte can describe: full, empty, and a
+        # six-bit count. Keep this in step with CAP_AW in proteus_capture.v.
+        self.cap_depth = 32
+        self.cap_mode = 0
+        self.cap_mem: list[CaptureEntry] = [
+            CaptureEntry(0, 0) for _ in range(self.cap_depth)
+        ]
         self.cap_wr = 0
         self.cap_rd_ptr = 0
         self.cap_count = 0
@@ -95,9 +101,9 @@ class ProteusISS:
 
     @property
     def cap_status(self) -> int:
-        full = 1 if self.cap_count == 8 else 0
+        full = 1 if self.cap_count >= self.cap_depth else 0
         empty = 1 if self.cap_count == 0 else 0
-        return (full << 7) | (empty << 6) | (self.cap_count & 0x0F)
+        return (full << 7) | (empty << 6) | (self.cap_count & 0x3F)
 
     def head(self) -> int:
         if self.cap_count == 0:
@@ -429,6 +435,7 @@ class ProteusISS:
         else:
             if cap_set_en:
                 self.cap_en = 1 if cap_en_val else 0
+                self.cap_mode = 1 if (imm >> 1) & 1 else 0
 
             pushing = self.cap_en and (not enabling) and (pins != self.cap_last_pins)
             if enabling:
@@ -436,14 +443,18 @@ class ProteusISS:
             elif pushing:
                 self.cap_last_pins = pins
 
-            push_ok = pushing and self.cap_count < 8
+            full = self.cap_count >= self.cap_depth
+            # FIFO mode drops a new event when full; roll mode overwrites the
+            # oldest entry so the last cap_depth events survive.
+            push_ok = pushing and (not full or bool(self.cap_mode))
+            drop = push_ok and full
             pop_ok = cap_pop and self.cap_count > 0
             if push_ok:
                 self.cap_mem[self.cap_wr] = CaptureEntry(old_timer & MASK8, pins)
-                self.cap_wr = (self.cap_wr + 1) & 0x7
-            if pop_ok:
-                self.cap_rd_ptr = (self.cap_rd_ptr + 1) & 0x7
-            if push_ok and not pop_ok:
+                self.cap_wr = (self.cap_wr + 1) % self.cap_depth
+            if pop_ok or drop:
+                self.cap_rd_ptr = (self.cap_rd_ptr + 1) % self.cap_depth
+            if push_ok and not pop_ok and not drop:
                 self.cap_count += 1
             elif pop_ok and not push_ok:
                 self.cap_count -= 1

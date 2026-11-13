@@ -1,6 +1,6 @@
 ; Proteus-1 capture FIFO demo.
 ;
-; Enables the 8-entry pin-change capture, waits while the testbench toggles
+; Enables the 32-entry pin-change capture, waits while the testbench toggles
 ; ui_in[1:0], then reports:
 ;   status (count) -> oldest ui byte -> oldest uio byte -> timestamp -> 0xAA
 ;

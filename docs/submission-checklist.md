@@ -23,7 +23,7 @@ the status column only with evidence; do not tick an item because it is planned.
 | GDS build | `.github/workflows/gds.yaml` | **passes** (run 40903018243, commit `abbebf2`); 0 DRC, 0 LVS, antenna clean |
 | Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **passes** |
 | Post-route timing | GDS action report | **32 MHz passes**: slow-corner setup +6.10 ns, 0 violating paths, hold positive |
-| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **18/18 pass** on synthesis and post-PnR netlists; 3 white-box tests skipped by design |
+| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **18/18 pass** on the last hardened netlist (synthesis and post-PnR); 3 white-box tests skipped by design. The capture-roll test is pin-level and runs with the next hardening |
 | Formal verification | `scripts/formal.sh`, `formal` CI job | **6 invariants proved** (BMC + induction), including the return stack |
 | FPGA check without hardware | `scripts/synth_fpga.sh` | **ECP5 map + PnR**: 1,611 LUT4, 544 FF, 65.9 MHz vs 32 MHz target |
 | AI-use disclosure | `docs/competition.md` | **done** |

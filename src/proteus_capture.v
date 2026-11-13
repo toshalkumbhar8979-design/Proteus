@@ -1,21 +1,32 @@
 // SPDX-FileCopyrightText: 2026 Toshal Kumbhar
 // SPDX-License-Identifier: Apache-2.0
-// Proteus-1 capture FIFO.
+// Proteus-1 capture engine.
 //
 // Samples the 16 external pin bits every enabled clock while cap_en=1. When the
-// sampled vector differs from the previous sample it pushes
+// sampled vector differs from the previous sample it stores
 // {timestamp[7:0], uio_in[7:0], ui_in[7:0]}. The oldest entry is exposed
 // combinationally as head_data, so a CAP_POP instruction can both read the head
 // and advance the read pointer on the same clock edge.
 //
-// The FIFO is intentionally small (8 entries, 24 bits each). It is a protocol
-// analyzer, not a frame buffer. New events are dropped when full; the status
-// byte tells firmware that this happened.
+// Two modes, chosen by CAP_EN imm[1]:
+//
+//   FIFO mode (imm[1]=0, the default). New events are dropped once the buffer is
+//   full and the status byte says so, so firmware can tell that it lost data.
+//
+//   Roll mode (imm[1]=1). The buffer keeps recording when full, overwriting the
+//   oldest entry. That is a scope in roll mode: enable it, let the protocol run,
+//   stop the program, and drain the last 32 edges before the stop without having
+//   armed the capture in advance or known where the interesting edge would be.
+//
+// 32 entries is the deepest this can go and still describe itself in one status
+// byte: full, empty, and a six-bit count. CAP_AW must stay <= 5 for that to
+// hold; the status expression below zero-extends the count so a smaller build
+// keeps the same bit layout.
 
 `default_nettype none
 
 module proteus_capture #(
-    parameter integer CAP_AW = 3
+    parameter integer CAP_AW = 5
 ) (
     input  wire              clk,
     input  wire              rst_n,
@@ -24,6 +35,7 @@ module proteus_capture #(
     input  wire [7:0]        timestamp,
     input  wire              set_en,      // CAP_EN instruction
     input  wire              en_val,      // imm[0]
+    input  wire              roll_val,    // imm[1]
     input  wire              pop,         // CAP_POP instruction
     input  wire              clear,       // CAP_CLR instruction
     output wire [23:0]       head_data,
@@ -36,9 +48,10 @@ module proteus_capture #(
   reg [23:0] mem [0:DEPTH-1];
   reg [CAP_AW-1:0] wr_ptr;
   reg [CAP_AW-1:0] rd_ptr;
-  reg [CAP_AW:0]   count;       // 0..8 needs four bits
+  reg [CAP_AW:0]   count;       // 0..DEPTH
   reg [15:0]       last_pins;
   reg              cap_en;
+  reg              cap_mode;
 
   wire full  = (count == DEPTH_COUNT);
   wire empty = (count == 0);
@@ -48,11 +61,17 @@ module proteus_capture #(
   // also push.
   wire enabling = set_en && en_val && !cap_en;
   wire pushing  = en && cap_en && !enabling && (pins != last_pins);
-  wire pushing_ok = pushing && !full;
-  wire popping_ok = pop && !empty;
+
+  // A push is kept in FIFO mode only while there is room. In roll mode it is
+  // always kept, and when the buffer is full the write lands on the oldest entry.
+  wire push = pushing && (!full || cap_mode);
+  wire drop = push && full;
+  wire popping = pop && !empty;
+
+  wire [5:0] count6 = count;
 
   assign head_data = empty ? 24'b0 : mem[rd_ptr];
-  assign status    = {full, empty, 2'b00, count[3:0]};
+  assign status    = {full, empty, count6};
 
   integer i;
   always @(posedge clk) begin
@@ -62,18 +81,20 @@ module proteus_capture #(
       count    <= {(CAP_AW+1){1'b0}};
       last_pins <= 16'b0;
       cap_en   <= 1'b0;
+      cap_mode <= 1'b0;
       for (i = 0; i < DEPTH; i = i + 1) begin
         mem[i] <= 24'b0;
       end
     end else begin
-      // Capture enable register.
+      // Capture enable and mode register.
       if (set_en) begin
-        cap_en <= en_val;
+        cap_en   <= en_val;
+        cap_mode <= roll_val;
       end
 
       if (enabling) begin
         last_pins <= pins;
-      end else if (en && cap_en && (pins != last_pins)) begin
+      end else if (pushing) begin
         // Track the newest observed state even when the FIFO is full, otherwise
         // a full FIFO would retry the same event forever and miss later ones.
         last_pins <= pins;
@@ -84,27 +105,38 @@ module proteus_capture #(
         rd_ptr <= {CAP_AW{1'b0}};
         count  <= {(CAP_AW+1){1'b0}};
       end else begin
-        if (pushing_ok) begin
+        if (push) begin
           mem[wr_ptr] <= {timestamp, pins};
           wr_ptr <= wr_ptr + 1'b1;
         end
-        if (popping_ok) begin
+
+        // The read pointer moves when an entry is consumed by CAP_POP, or when a
+        // push into a full rolling buffer overwrites the oldest entry. A push and
+        // a pop in the same cycle touch different slots, so one increment covers
+        // both: while full, wr_ptr == rd_ptr and the store lands exactly in the
+        // slot the pop just freed.
+        if (popping) begin
+          rd_ptr <= rd_ptr + 1'b1;
+        end else if (drop) begin
           rd_ptr <= rd_ptr + 1'b1;
         end
 
-        if (pushing_ok && !popping_ok) begin
+        if (push && !popping && !drop) begin
           count <= count + 1'b1;
-        end else if (!pushing_ok && popping_ok) begin
+        end else if (!push && popping) begin
           count <= count - 1'b1;
         end
-        // Push and pop together leave count unchanged.
+        // Push together with pop, or a push that overwrites the oldest entry,
+        // leaves the fill level unchanged.
       end
     end
   end
 
 `ifdef FORMAL
-  // Formal-only: the FIFO fill level can never exceed its depth, so CAP_STATUS
-  // cannot report a count the firmware would use to index past the array.
+  // Formal-only: the buffer fill level can never exceed its depth, so CAP_STATUS
+  // cannot report a count the firmware would use to index past the array. The
+  // bound holds in roll mode too, where the count stays at DEPTH and the read
+  // pointer moves instead.
 `ifndef F_NO_CAP
   // The bound is a post-reset guarantee, not a power-up one: an ASIC flop can
   // come up in any state, which is exactly why the RTL has a reset. Track that

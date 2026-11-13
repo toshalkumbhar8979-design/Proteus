@@ -33,7 +33,7 @@ therefore be written as a timing diagram.
                        │  A, X, Y, PC[6:0], Z/C/N, 8-deep stack│◄── uio_out[7:0]
                        │  ALU, shifts, pin ops, branches       │──► uio_oe[7:0]
                        │  16-bit cycle timer                   │──► uio_od[7:0]
-                       │  8 x 24 capture FIFO                  │
+                       │  32 x 24 capture FIFO                 │
                        └───────────────────────────────────────┘
 ```
 
@@ -121,10 +121,18 @@ atomic 16-bit timestamp without a critical-section dance.
 
 The capture engine samples `{uio_in, ui_in}` every enabled clock while
 `CAP_EN=1`. When the 16-bit vector changes it pushes
-`{timer[7:0], uio_in, ui_in}` into an 8-entry FIFO. It is deliberately small:
-a protocol analyzer needs a burst of edges around a trigger, not a frame
-buffer. `CAP_STATUS` reports full/empty/count; `CAP_POP` reads the oldest entry
-and advances the pointer in the same cycle.
+`{timer[7:0], uio_in, ui_in}` into a 32-entry buffer, which is the deepest it can
+go and still describe itself in one status byte: full, empty, and a six-bit
+count. Thirty-two edges is a whole I2C or SPI transaction, or a UART byte with
+its framing.
+
+Two modes share the buffer. In FIFO mode new events are dropped once it is full
+and `CAP_STATUS` says so, which is what a directed test wants. In roll mode the
+oldest entry is overwritten instead, so the buffer always holds the newest 32
+edges: run the protocol, stop, and drain the window that just happened without
+having armed the capture in advance or known where the interesting edge would
+be. `CAP_STATUS` reports full/empty/count; `CAP_POP` reads the oldest entry and
+advances the pointer in the same cycle.
 
 ## 4. Host loader
 
@@ -203,7 +211,7 @@ hardened timing run and a fresh protocol-rate check.
   split into separate images or written with macros.
 - The loader is write-only except for program readback; there is no data-memory
   readback command. Firmware can report data on pins.
-- The capture FIFO is 8 entries and 8-bit timestamps; it is for bursts, not
+- The capture FIFO is 32 entries with 8-bit timestamps; it is for bursts, not
   long traces.
 - No interrupts. A blocking `WAIT_PIN` stalls the CPU; concurrent protocols
   require interleaving by hand.
