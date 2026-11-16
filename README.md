@@ -8,16 +8,6 @@ Proteus-1 is not a bag of fixed UART, SPI, and I2C peripherals. It is a
 cycle-deterministic 8-bit CPU whose instruction set is built around pins, edges,
 and time, plus a host loader and a capture FIFO for looking at live buses.
 
-![Proteus-1 block diagram: the host loader feeding program and data memory, the
-single-cycle core, pin registers and capture, and the pad ring](docs/images/block_diagram.png)
-
-*One core, two memories, two protocol helpers, twenty-four pins. Each memory sits directly above the
-core port that addresses it, so every net is a straight stub in a gutter and no
-wire crosses a block. Every arrow is a net that exists in
-[`src/tt_um_proteus.v`](src/tt_um_proteus.v). Source:
-[`docs/figures/block_diagram.tex`](docs/figures/block_diagram.tex); rebuild with
-`make figures`.*
-
 ## In sixty seconds
 
 Most entries in this competition demonstrate a protocol; Proteus-1 makes the
@@ -37,6 +27,16 @@ lets the chip record a live bus as well as drive it, and CRC-16/USB, CRC-5/USB a
 an NRZI-plus-stuffing serialiser mean line-coded protocols cost firmware loops
 instead of bit budgets. Everything claimed here reproduces from a command in this
 file, including the mistakes the verification found.
+
+![Proteus-1 block diagram: the host loader feeding program and data memory, the
+single-cycle core, pin registers and capture, and the pad ring](docs/images/block_diagram.png)
+
+*One core, two memories, two protocol helpers, twenty-four pins. Each memory sits directly above the
+core port that addresses it, so every net is a straight stub in a gutter and no
+wire crosses a block. Every arrow is a net that exists in
+[`src/tt_um_proteus.v`](src/tt_um_proteus.v). Source:
+[`docs/figures/block_diagram.tex`](docs/figures/block_diagram.tex); rebuild with
+`make figures`.*
 
 ## Why a protocol CPU?
 

@@ -153,11 +153,29 @@ pad, so firmware still owns the pins and the pin rules of section 3.3 are
 unchanged. A bit is therefore `SER_NEXT` plus an `OUT`, and the `WAIT` that sets
 the bit period is the same instruction UART uses.
 
-Both blocks cost 4,171 um2 together, 1.4% of the mapped area, and both are
+`SER_LD` deliberately keeps the running level and ones count rather than
+restarting them: a packet is one continuous NRZI stream and one continuous
+stuffing window, so a byte boundary must not inject a transition or reset the run
+of ones. Clear both with `SER_SET` when starting a fresh packet. This distinction
+is what makes a multi-byte packet correct, and it was found by writing one: the
+first version reset the line state per byte, which the single-byte test could not
+see.
+
+The blocks are exercised at packet level, not just symbol level.
+`programs/usb_data_tx.s` sends a complete low-speed data packet on `uio[0]` — SYNC,
+PID DATA0, two payload bytes and the complemented CRC-16/USB — using nothing but
+`SER_LD`/`SER_NEXT` for the wire and `CRC16_ADD`/`CRC16_LO`/`CRC16_HI` for the
+checksum. `test_usb_data_packet` compares the entire emitted level stream against
+an independent multi-byte NRZI + stuffing encoder, then decodes it back to bytes
+and compares those against the packet it asked for, so a boundary error cannot
+hide inside a per-byte view.
+
+Both blocks cost 3,943 um2 together, 1.3% of the mapped area, and both are
 covered by tests rather than asserted: the CRC test checks the standard check
-value and a reference CRC-5, and the line-coder test compares the emitted level
-sequence against an independent NRZI + stuffing reference, including the stuffed
-zero after six ones.
+value and a reference CRC-5, the line-coder test compares the emitted level
+sequence against an independent NRZI + stuffing reference including the stuffed
+zero after six ones, and the packet test covers the stream across byte
+boundaries.
 
 ## 4. Host loader
 
