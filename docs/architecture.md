@@ -267,7 +267,10 @@ hardened timing run and a fresh protocol-rate check.
 
 1. SRAM-backed 512-word program memory after a verified LibreLane macro flow.
 2. Dual core or four contexts for concurrent protocols.
-3. Hardware Manchester encoder/decoder and CRC for low-speed USB / 10BASE-T.
+3. A receive counterpart to the line coder (NRZI decode plus unstuffing), which a
+   USB device role needs for its own tokens, and a Manchester encoder/decoder for
+   10BASE-T. The transmit line coder and both CRC registers already exist; there
+   is no receive path and no 10BASE-T work at all.
 4. A host GUI that loads images and plots capture FIFO traces.
 5. An ISA-equivalence proof, or a full formal model of the loader FSM. The six
    proven invariants cover PC freeze, the timer, the capture bound, loader
