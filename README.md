@@ -45,7 +45,7 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **22/22 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, opcode sweep, co-simulation) |
+| Cocotb tests | **24/24 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB NRZI + stuffing, opcode sweep, co-simulation) |
 | RTL vs ISS | all 96 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells: 34% of the nominal 6×4 area, 26% of the 8×4 allocation |
@@ -107,8 +107,7 @@ IDCODE. Regenerate with `python scripts/make_waveform.py` after
 ## ISA at a glance
 
 Sixteen-bit words: 4-bit opcode, 3-bit sub-opcode, 1-bit port/immediate selector,
-8-bit immediate. Twelve instruction classes cover ALU, shifts, load/store, pin
-I/O, branches, calls, waits, timer, and capture. The full encoding, flag rules,
+8-bit immediate. Fourteen instruction classes cover ALU, shifts, load/store, pin I/O, branches, calls, waits, timer, capture, CRC, and the USB line coder. The full encoding, flag rules,
 and cycle costs are in [`docs/isa.md`](docs/isa.md).
 
 ```
@@ -119,6 +118,24 @@ SETB UIO, 0x08     ; one cycle, no accumulator clobber
 WAIT_PIN1 UI, 0x08 ; stall until the pin is high
 CALL uart_tx       ; one cycle, 8-deep return stack
 ```
+
+## Protocol helpers on the die
+
+Two small blocks make line-coded protocols firmware-shaped instead of a timing
+argument. Both are original RTL, both are single-cycle, and together they cost
+**4,171 µm²** — 1.4% of the mapped area.
+
+| Block | Instructions | What it does |
+|---|---|---|
+| CRC-16/USB | `CRC16_RST`, `CRC16_ADD`, `CRC16_LO/HI` | one byte per instruction, reflected poly 0xA001, init 0xFFFF; reproduces the published check value `0xB4C8` for `123456789` |
+| CRC-5/USB | `CRC5_RST`, `CRC5_BIT n`, `CRC5` | one bit per instruction for 11-bit token fields, reflected poly 0x14 |
+| USB line coder | `SER_LD`, `SER_NEXT`, `SER_BUSY` | NRZI with bit stuffing: returns the next line level in `A`, so firmware picks the pad |
+
+A shift-out loop becomes `SER_NEXT` plus an `OUT`, and each CRC is one
+instruction per byte or bit instead of a software loop. That is what makes the
+low-speed USB story credible: the chip does the line coding and the CRC itself,
+which is exactly what the competition asks for on the stretch protocols, while
+the timing still comes from `WAIT`.
 
 ## Memory and I/O map
 
@@ -170,7 +187,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 22 tests
+# RTL simulation: 24 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B

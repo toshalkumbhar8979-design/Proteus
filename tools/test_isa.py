@@ -17,13 +17,41 @@ from proteus_iss import ProteusISS
 
 
 def test_encode_decode_roundtrip():
-    for op in range(12):
+    for op in range(14):
         for sub in range(8):
             word = isa.encode(op, sub, 0xA5)
             assert isa.decode(word) == (op, sub, 0xA5)
             d = isa.disassemble(word, 0x12)
             assert d.text
             assert d.text.startswith("12: ")
+
+
+def test_protocol_helper_mnemonics():
+    src = """
+        CRC16_RST
+        CRC16_ADD
+        CRC16_LO
+        CRC16_HI
+        CRC5_RST
+        CRC5_BIT 1
+        CRC5_BIT 0
+        CRC5
+        SER_LD
+        SER_NEXT
+        SER_LEVEL
+        SER_BUSY
+        SER_ONES
+        SER_SET 1
+        SER_SET 0
+    """
+    image = assemble(src)
+    words = [image.program[a] for a in sorted(image.program)]
+    assert len(words) == 15
+    texts = [isa.disassemble(w).text for w in words]
+    assert texts[0] == "CRC16_RST"
+    assert texts[5] == "CRC5_BIT 1"
+    assert texts[8] == "SER_LD"
+    assert texts[13] == "SER_SET 1"
 
 
 def test_assembler_all_mnemonics():

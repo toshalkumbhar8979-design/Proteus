@@ -23,9 +23,11 @@ from proteus_isa import (
     OP_BIT,
     OP_BRANCH,
     OP_CAP,
+    OP_CRC,
     OP_IO,
     OP_LOAD,
     OP_MISC,
+    OP_SER,
     OP_SHIFT,
     OP_TIME,
     OP_TIMER,
@@ -35,6 +37,23 @@ from proteus_isa import (
 MASK8 = 0xFF
 MASK16 = 0xFFFF
 PC_MASK = 0x7F  # 128-word program memory; PC is 7 bits
+
+
+def crc16_byte(crc: int, byte: int) -> int:
+    """One CRC-16/USB byte step: reflected 0xA001, init 0xFFFF, xorout on read."""
+    crc ^= byte & 0xFF
+    for _ in range(8):
+        crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+    return crc & 0xFFFF
+
+
+def crc5_bit(crc: int, bit: int) -> int:
+    """One USB token CRC-5 bit step: reflected 0x14, init 0x1F."""
+    mix = (crc & 1) ^ (bit & 1)
+    crc >>= 1
+    if mix:
+        crc ^= 0x14
+    return crc & 0x1F
 
 
 @dataclass
@@ -90,6 +109,13 @@ class ProteusISS:
         self.cap_rd_ptr = 0
         self.cap_count = 0
         self.cap_last_pins = 0
+        self.crc16 = 0xFFFF
+        self.crc5 = 0x1F
+        self.ser_shift = 0
+        self.ser_bits = 0
+        self.ser_ones = 0
+        self.ser_level = 1
+        self.ser_pend = 0
         self.ui = 0
         self.uio_in = 0
         self.cycles = 0
@@ -418,6 +444,77 @@ class ProteusISS:
                     self.a = status_before
                 elif sub == 6:
                     self.cap_rd = 0
+
+            elif op == OP_CRC:
+                if sub == 0:
+                    self.crc16 = 0xFFFF
+                elif sub == 1:
+                    self.crc16 = crc16_byte(self.crc16, self.a)
+                elif sub == 2:
+                    v = (self.crc16 & 0xFF) ^ 0xFF
+                    self.a = v
+                    self.z = 1 if v == 0 else 0
+                    self.n = (v >> 7) & 1
+                elif sub == 3:
+                    v = ((self.crc16 >> 8) & 0xFF) ^ 0xFF
+                    self.a = v
+                    self.z = 1 if v == 0 else 0
+                    self.n = (v >> 7) & 1
+                elif sub == 4:
+                    self.crc5 = 0x1F
+                elif sub == 5:
+                    self.crc5 = crc5_bit(self.crc5, imm & 1)
+                elif sub == 6:
+                    v = (self.crc5 ^ 0x1F) & 0xFF
+                    self.a = v
+                    self.z = 1 if v == 0 else 0
+                    self.n = (v >> 7) & 1
+
+            elif op == OP_SER:
+                if sub == 0:
+                    self.ser_shift = self.a & 0xFF
+                    self.ser_bits = 8
+                    self.ser_ones = 0
+                    self.ser_level = 1
+                    self.ser_pend = 0
+                elif sub == 1:
+                    busy = self.ser_bits != 0 or self.ser_pend
+                    nxt = (~self.ser_level) & 1 if self.ser_pend else (
+                        self.ser_level if (self.ser_shift & 1) else (~self.ser_level) & 1
+                    )
+                    if self.ser_pend:
+                        self.ser_level = nxt
+                        self.ser_pend = 0
+                        self.ser_ones = 0
+                        self.a = nxt
+                    elif self.ser_bits != 0:
+                        bit = self.ser_shift & 1
+                        self.ser_shift = (self.ser_shift >> 1) & 0xFF
+                        self.ser_bits -= 1
+                        self.ser_level = nxt
+                        self.a = nxt
+                        if bit:
+                            self.ser_ones += 1
+                            if self.ser_ones == 6:
+                                self.ser_pend = 1
+                                self.ser_ones = 0
+                        else:
+                            self.ser_ones = 0
+                    else:
+                        self.a = self.ser_level
+                elif sub == 2:
+                    self.a = self.ser_level & 1
+                elif sub == 3:
+                    busy = 1 if (self.ser_bits != 0 or self.ser_pend) else 0
+                    self.a = busy
+                    self.z = 1 if busy == 0 else 0
+                    self.n = 0
+                elif sub == 4:
+                    self.a = self.ser_ones & 0xFF
+                elif sub == 5:
+                    self.ser_level = imm & 1
+                    self.ser_pend = 0
+                    self.ser_ones = 0
 
         # ---- data memory write lands at the end of the tick ----
         if data_write is not None:

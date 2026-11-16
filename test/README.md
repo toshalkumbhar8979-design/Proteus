@@ -31,10 +31,12 @@ white-box tests are skipped: `TESTS=21 PASS=18 FAIL=0 SKIP=3`.
 | `test_i2c_target` / `test_i2c_target_400k` | open-drain I2C target at 100 and 400 kHz |
 | `test_ps2_device` | PS/2 11-bit device frame, odd parity |
 | `test_jtag_idcode` | JTAG master against a modelled TAP: reset, Shift-DR, 32-bit IDCODE |
-| `test_capture` / `test_capture_overflow` | timestamped pin-change FIFO, full/overflow status |
+| `test_capture` / `test_capture_overflow` / `test_capture_roll` | timestamped pin-change buffer, full/overflow status, roll mode keeping the newest 32 |
+| `test_crc_helpers` | CRC-16/USB against the published check value, CRC-5 against a reference |
+| `test_usb_line_code` | NRZI + bit-stuffing level sequence against an independent reference |
 | `test_pin_wait` | level waits on `ui_in` |
 | `test_timer_cosim` | timer clear, atomic latch, wrap past 255 cycles |
-| `test_opcode_sweep` | all 96 opcode/subop encodings against the ISS |
+| `test_opcode_sweep` | all 112 opcode/subop encodings against the ISS |
 | `test_random_cosim` | 1,000-clock RTL/ISS lock-step |
 
 ## Gate level

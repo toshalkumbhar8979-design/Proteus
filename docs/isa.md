@@ -242,9 +242,64 @@ bits: `[7]=full`, `[6]=empty`, `[5:0]=count`.
 `CAP_POP` and the subsequent `CAP_UI/UIO/TS` are separated by one instruction
 boundary; the popped value is available to the next instruction.
 
-### 3.13 Reserved opcodes
+### 3.13 `CRC` — CRC helpers (`opcode = 12`)
 
-`opcode = 12..31` are reserved. They execute as `NOP` and must not be used.
+| sub | Mnemonic | Operation |
+|---|---|---|
+| 0 | `CRC16_RST` | `crc16 ← 0xFFFF` |
+| 1 | `CRC16_ADD` | `crc16 ← step(crc16, A)`; one whole byte per instruction |
+| 2 | `CRC16_LO` | `A ← crc16[7:0] ^ 0xFF`; sets `Z`, `N` |
+| 3 | `CRC16_HI` | `A ← crc16[15:8] ^ 0xFF`; sets `Z`, `N` |
+| 4 | `CRC5_RST` | `crc5 ← 0x1F` |
+| 5 | `CRC5_BIT imm` | `crc5 ← step(crc5, imm[0])`; one bit per instruction |
+| 6 | `CRC5` | `A ← {3'b0, crc5 ^ 0x1F}`; sets `Z`, `N` |
+| 7 | reserved | no effect |
+
+Both CRCs use the reflected USB conventions, so a data packet and a token packet
+are each a short instruction sequence rather than a bit-twiddling loop. CRC-16
+uses polynomial 0x8005 (reflected 0xA001) with init 0xFFFF and a final XOR of
+0xFFFF, and reproduces the published check value `0xB4C8` for the ASCII string
+`123456789`. CRC-5 uses polynomial 0x05 (reflected 0x14) with init 0x1F and a
+final XOR of 0x1F; a token field is 11 bits rather than a byte, which is why it
+steps one bit at a time. Core reset leaves `crc16` at 0xFFFF and `crc5` at 0x1F,
+so a program that never issues the reset instruction still starts from the USB
+initial value.
+
+### 3.14 `SER` — NRZI line coder with bit stuffing (`opcode = 13`)
+
+| sub | Mnemonic | Operation |
+|---|---|---|
+| 0 | `SER_LD` | latch `A` (8 bits, LSB first), clear the ones counter, line level ← 1 |
+| 1 | `SER_NEXT` | one bit time: `A ← next line level`, advancing the shifter or emitting a stuffed 0 |
+| 2 | `SER_LEVEL` | `A ← line level` |
+| 3 | `SER_BUSY` | `A ← 1` while data bits or a stuffed 0 remain; sets `Z`, `N` |
+| 4 | `SER_ONES` | `A ← consecutive ones since the last stuffed 0` |
+| 5 | `SER_SET imm` | line level ← `imm[0]`; clears the stuffing state |
+| 6 | reserved | no effect |
+| 7 | reserved | no effect |
+
+`SER_NEXT` implements the USB low-speed line code: a data bit of 0 is a
+transition, a 1 holds the line, and after six consecutive ones a stuffed 0 (also
+a transition) is sent without consuming a data bit. The instruction returns the
+new level in `A` and drives no pad, so firmware chooses the pin and the pin
+ownership rules of section 3.4 stay intact:
+
+```
+loop:  SER_BUSY
+       CMP A, 0x01
+       JNZ done
+       SER_NEXT
+       OUT UIO, A
+       JMP loop
+```
+
+With nothing left to send, `SER_NEXT` returns the current level without advancing,
+so a program that ignores `SER_BUSY` repeats a level instead of fabricating a bit
+that was never in the byte.
+
+### 3.15 Reserved opcodes
+
+`opcode = 14..31` are reserved. They execute as `NOP` and must not be used.
 The assembler emits an error for them.
 
 ## 4. Flags

@@ -134,6 +134,30 @@ having armed the capture in advance or known where the interesting edge would
 be. `CAP_STATUS` reports full/empty/count; `CAP_POP` reads the oldest entry and
 advances the pointer in the same cycle.
 
+### 3.7 Protocol helpers
+
+Two blocks exist because a protocol is not only timing: line coding and checksums
+are what separate "bit-banged" from "the chip does it".
+
+The CRC block holds two reflected registers, a 16-bit one that consumes a whole
+byte per instruction (polynomial 0x8005, init 0xFFFF, final XOR 0xFFFF) and a
+5-bit one that consumes one bit (polynomial 0x05, init 0x1F), because a USB token
+field is 11 bits rather than a byte. Both use the USB conventions, and the 16-bit
+one reproduces the published check value 0xB4C8 for `123456789`.
+
+The serialiser holds the byte being sent, a count of bits left, a count of
+consecutive ones, the current line level, and whether a stuffed zero is owed.
+`SER_NEXT` advances one bit time and returns the next level in `A`; it drives no
+pad, so firmware still owns the pins and the pin rules of section 3.3 are
+unchanged. A bit is therefore `SER_NEXT` plus an `OUT`, and the `WAIT` that sets
+the bit period is the same instruction UART uses.
+
+Both blocks cost 4,171 um2 together, 1.4% of the mapped area, and both are
+covered by tests rather than asserted: the CRC test checks the standard check
+value and a reference CRC-5, and the line-coder test compares the emitted level
+sequence against an independent NRZI + stuffing reference, including the stuffed
+zero after six ones.
+
 ## 4. Host loader
 
 The loader is a write-mostly SPI mode-0 target on `ui_in[7:5]` and `uo_out[7]`.

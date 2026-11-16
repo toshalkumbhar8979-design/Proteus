@@ -22,6 +22,8 @@ OP_ALUX = 8
 OP_ALUY = 9
 OP_TIMER = 10
 OP_CAP = 11
+OP_CRC = 12
+OP_SER = 13
 
 OPCODE_NAMES = {
     OP_ALU: "ALU",
@@ -36,6 +38,8 @@ OPCODE_NAMES = {
     OP_ALUY: "ALUY",
     OP_TIMER: "TIMER",
     OP_CAP: "CAP",
+    OP_CRC: "CRC",
+    OP_SER: "SER",
 }
 
 ALU_NAMES = ["ADD", "ADC", "SUB", "SBC", "AND", "OR", "XOR", "CMP"]
@@ -198,6 +202,30 @@ def disassemble(word: int, pc: int | None = None) -> Decoded:
             7: ".word ; reserved CAP 7",
         }[sub]
         text = cap_ops
+    elif op == OP_CRC:
+        crc_ops = {
+            0: "CRC16_RST",
+            1: "CRC16_ADD",
+            2: "CRC16_LO",
+            3: "CRC16_HI",
+            4: "CRC5_RST",
+            5: f"CRC5_BIT {imm & 1}",
+            6: "CRC5",
+            7: ".word ; reserved CRC 7",
+        }[sub]
+        text = crc_ops
+    elif op == OP_SER:
+        ser_ops = {
+            0: "SER_LD",
+            1: "SER_NEXT",
+            2: "SER_LEVEL",
+            3: "SER_BUSY",
+            4: "SER_ONES",
+            5: f"SER_SET {imm & 1}",
+            6: ".word ; reserved SER 6",
+            7: ".word ; reserved SER 7",
+        }[sub]
+        text = ser_ops
     else:
         text = f".word 0x{word:04X} ; reserved opcode"
 

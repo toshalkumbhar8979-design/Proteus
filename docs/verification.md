@@ -28,7 +28,7 @@ Environment: Icarus Verilog 12.0, cocotb 2.0.1, Python 3.13, Yosys 0.65,
 Verilator 5.046, IHP-Open-PDK `2bbec75`.
 
 ```
-TESTS=22 PASS=22 FAIL=0 SKIP=0
+TESTS=24 PASS=24 FAIL=0 SKIP=0
 TOTAL SIM TIME=4,033,620 ns
 ```
 
@@ -54,7 +54,9 @@ TOTAL SIM TIME=4,033,620 ns
 | `test_capture_overflow` | 34 pin changes into the 32-entry FIFO | Full flag set, count saturates at 32, extra events dropped |
 | `test_capture_roll` | 49 pin changes with `CAP_EN 3` | Roll mode keeps the newest 32 events: full flag set, count 32, and the oldest survivor carries the phase-2 pin state, so the early entries were overwritten rather than dropped |
 | `test_pin_wait` | `WAIT_PIN0/1` on `ui_in[0]` | Level-sensitive stall and release, no missed edge |
-| `test_opcode_sweep` | Every opcode/subop pair, fixed preamble, 30-cycle window | All 96 encodings execute identically on RTL and ISS |
+| `test_crc_helpers` | Feed `123456789` through `CRC16_ADD`, then 11 token bits through `CRC5_BIT` | CRC-16/USB equals the published check value `0xB4C8`; CRC-5 equals a reference implementation in the test file |
+| `test_usb_line_code` | `SER_LD 0xFF`, then `SER_NEXT` with a bit strobe on `uo[7]` | The emitted level sequence is bit-for-bit the NRZI + stuffing sequence an independent reference produces, including the stuffed 0 after six ones |
+| `test_opcode_sweep` | Every opcode/subop pair, fixed preamble, 30-cycle window | All 112 encodings execute identically on RTL and ISS |
 | `test_random_cosim` | 48-instruction random program, 1,000 enabled clocks | Full architectural lock-step against the ISS after every clock |
 
 The protocol tests use real timing relationships: UART at 417 cycles/bit, SPI
@@ -135,7 +137,7 @@ at `https://toshalkumbhar8979-design.github.io/Proteus/`.
 ### Gate-level tests
 
 The `GATES=yes` path runs the same cocotb suite against a flattened netlist.
-Three co-simulation tests read named core registers and are skipped there; the other 19 drive real pins. The counts below are from the last hardened netlist, which predates the capture-roll test; that test is pin-level and will run at gate level with the next hardening. They pass on **both** the synthesis netlist and the
+Three co-simulation tests read named core registers and are skipped there; the other 21 drive real pins. The counts below are from the last hardened netlist, which predates the three tests added since; all three are pin-level and will run at gate level with the next hardening. They pass on **both** the synthesis netlist and the
 post-place-and-route netlist, using the Icarus 13 build the action ships:
 
 ```
@@ -244,7 +246,7 @@ These are the honest gaps. They are not covered by the numbers above.
 - **Three co-simulation tests are RTL-only.** `test_timer_cosim`,
   `test_opcode_sweep`, and `test_random_cosim` read named core registers, which
   the flattened gate-level netlist does not preserve. They are skipped when
-  `GATES=yes`; the other 19 pin-level tests exercise the netlist.
+  `GATES=yes`; the other 21 pin-level tests exercise the netlist.
 
 ## 8. Reproducing
 

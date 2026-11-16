@@ -58,6 +58,8 @@ module proteus_core #(
   localparam [4:0] OP_ALUY   = 5'd9;
   localparam [4:0] OP_TIMER  = 5'd10;
   localparam [4:0] OP_CAP    = 5'd11;
+  localparam [4:0] OP_CRC    = 5'd12;
+  localparam [4:0] OP_SER    = 5'd13;
 
   // ---------------------------------------------------------------------------
   // Architectural state
@@ -89,6 +91,18 @@ module proteus_core #(
 
   reg [23:0]         cap_rd;
 
+  // Protocol helpers. crc16 is one byte step away from a USB data-packet CRC;
+  // the serialiser holds the byte being line-coded, how much of it is left, how
+  // many consecutive ones have been sent, the current line level, and whether a
+  // stuffed zero is owed.
+  reg [15:0]         crc16;
+  reg [4:0]          crc5;
+  reg [7:0]          ser_shift;
+  reg [3:0]          ser_bits;
+  reg [2:0]          ser_ones;
+  reg                ser_level;
+  reg                ser_pend;
+
   // ---------------------------------------------------------------------------
   // Decode
   // ---------------------------------------------------------------------------
@@ -98,6 +112,42 @@ module proteus_core #(
 
   wire [15:0] pins = {uio_in, ui_in};
   wire        cpu_active = en && !halt && !wait_active;
+
+  // ---------------------------------------------------------------------------
+  // Protocol helper functions (opcodes CRC and SER)
+  // ---------------------------------------------------------------------------
+
+  // CRC-16/USB: reflected polynomial 0x8005 (0xA001), init 0xFFFF, xorout 0xFFFF
+  // applied on read. A whole byte is consumed per instruction, so the eight bit
+  // steps are unrolled combinationally. The published check value for the ASCII
+  // string "123456789" is 0xB4C8, and the test asserts it.
+  function [15:0] crc16_byte;
+    input [15:0] c;
+    input [7:0]  d;
+    integer      k;
+    reg   [15:0] v;
+    begin
+      v = c ^ {8'h00, d};
+      for (k = 0; k < 8; k = k + 1) begin
+        v = v[0] ? ((v >> 1) ^ 16'hA001) : (v >> 1);
+      end
+      crc16_byte = v;
+    end
+  endfunction
+
+  // USB token CRC-5: reflected polynomial 0x05 (0x14), init 0x1F, xorout 0x1F.
+  // A USB token field is 11 bits, not a whole byte, so this steps one bit at a
+  // time and the immediate carries the bit.
+  function [4:0] crc5_bit;
+    input [4:0] c;
+    input       b;
+    reg   [4:0] v;
+    begin
+      v = c >> 1;
+      if (c[0] ^ b) v = v ^ 5'h14;
+      crc5_bit = v;
+    end
+  endfunction
 
   // ---------------------------------------------------------------------------
   // Combinational ALU / shifts
@@ -182,6 +232,20 @@ module proteus_core #(
   wire [23:0] cap_head;
   wire [7:0]  cap_status;
 
+  // ---------------------------------------------------------------------------
+  // Protocol helper datapath. The serialiser is NRZI with USB bit stuffing: a
+  // data bit of 0 is a transition and a 1 holds the line, and after six
+  // consecutive ones a stuffed 0 (which is a transition) is inserted. The core
+  // returns the next line level in A and leaves the pin to firmware, so an
+  // OUT/SETB decides which pad the protocol uses.
+  // ---------------------------------------------------------------------------
+  wire        ser_busy = (ser_bits != 4'd0) || ser_pend;
+  wire        ser_bit  = ser_shift[0];
+  wire        ser_next = ser_pend ? ~ser_level : (ser_bit ? ser_level : ~ser_level);
+  wire [7:0]  crc16_lo = crc16[7:0]  ^ 8'hFF;
+  wire [7:0]  crc16_hi = crc16[15:8] ^ 8'hFF;
+  wire [7:0]  crc5_val = {3'b000, crc5 ^ 5'h1F};
+
   proteus_capture #(
       .CAP_AW(5)
   ) u_capture (
@@ -236,6 +300,13 @@ module proteus_core #(
       wait_mask  <= 8'b0;
       wait_ref   <= 16'b0;
       cap_rd     <= 24'b0;
+      crc16      <= 16'hFFFF;
+      crc5       <= 5'h1F;
+      ser_shift  <= 8'b0;
+      ser_bits   <= 4'b0;
+      ser_ones   <= 3'b0;
+      ser_level  <= 1'b1;
+      ser_pend   <= 1'b0;
       for (i = 0; i < 8; i = i + 1) begin
         stack[i] <= 8'b0;
       end
@@ -518,6 +589,82 @@ module proteus_core #(
                 3'd4: a <= cap_rd[23:16];
                 3'd5: a <= cap_status;
                 3'd6: cap_rd <= 24'b0;
+                default: ;
+              endcase
+            end
+
+            // ---------------------------------------------------------------
+            OP_CRC: begin
+              case (sub)
+                3'd0: crc16 <= 16'hFFFF;                       // CRC16_RST
+                3'd1: crc16 <= crc16_byte(crc16, a);            // CRC16_ADD
+                3'd2: begin                                       // CRC16_LO
+                  a <= crc16_lo;
+                  z <= (crc16_lo == 8'b0);
+                  n <= crc16_lo[7];
+                end
+                3'd3: begin                                       // CRC16_HI
+                  a <= crc16_hi;
+                  z <= (crc16_hi == 8'b0);
+                  n <= crc16_hi[7];
+                end
+                3'd4: crc5 <= 5'h1F;                            // CRC5_RST
+                3'd5: crc5 <= crc5_bit(crc5, imm[0]);            // CRC5_BIT
+                3'd6: begin                                       // CRC5
+                  a <= crc5_val;
+                  z <= (crc5_val == 8'b0);
+                  n <= crc5_val[7];
+                end
+                default: ;
+              endcase
+            end
+
+            // ---------------------------------------------------------------
+            OP_SER: begin
+              case (sub)
+                3'd0: begin                       // SER_LD: latch A, idle level 1
+                  ser_shift <= a;
+                  ser_bits  <= 4'd8;
+                  ser_ones  <= 3'd0;
+                  ser_level <= 1'b1;
+                  ser_pend  <= 1'b0;
+                end
+                3'd1: begin                       // SER_NEXT: one bit time
+                  if (ser_pend) begin
+                    ser_level <= ser_next;
+                    ser_pend  <= 1'b0;
+                    ser_ones  <= 3'd0;
+                    a         <= {7'b0, ser_next};
+                  end else if (ser_bits != 4'd0) begin
+                    ser_shift <= {1'b0, ser_shift[7:1]};
+                    ser_bits  <= ser_bits - 4'd1;
+                    ser_level <= ser_next;
+                    a         <= {7'b0, ser_next};
+                    if (ser_bit) begin
+                      ser_ones <= ser_ones + 3'd1;
+                      if (ser_ones == 3'd5) begin
+                        ser_pend <= 1'b1;
+                        ser_ones <= 3'd0;
+                      end
+                    end else begin
+                      ser_ones <= 3'd0;
+                    end
+                  end else begin
+                    a <= {7'b0, ser_level};       // nothing left to send
+                  end
+                end
+                3'd2: a <= {7'b0, ser_level};     // SER_LEVEL
+                3'd3: begin                       // SER_BUSY
+                  a <= {7'b0, ser_busy};
+                  z <= ~ser_busy;
+                  n <= 1'b0;
+                end
+                3'd4: a <= {5'b0, ser_ones};      // SER_ONES
+                3'd5: begin                       // SER_SET: force the line level
+                  ser_level <= imm[0];
+                  ser_pend  <= 1'b0;
+                  ser_ones  <= 3'd0;
+                end
                 default: ;
               endcase
             end

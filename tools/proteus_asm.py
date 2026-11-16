@@ -30,6 +30,8 @@ from proteus_isa import (
     OP_BIT,
     OP_BRANCH,
     OP_CAP,
+    OP_CRC,
+    OP_SER,
     OP_IO,
     OP_LOAD,
     OP_MISC,
@@ -383,6 +385,42 @@ def encode_instruction(op: str, args: list[str], symbols: dict[str, int], lineno
             return encode(OP_CAP, 0, expr(0))
         want(0)
         return encode(OP_CAP, cap_subs[m], 0)
+
+    # Protocol helpers: CRC and the USB line coder.
+    crc_subs = {
+        "CRC16_RST": 0,
+        "CRC16_ADD": 1,
+        "CRC16_LO": 2,
+        "CRC16_HI": 3,
+        "CRC5_RST": 4,
+        "CRC5": 6,
+    }
+    if m in crc_subs:
+        want(0)
+        return encode(OP_CRC, crc_subs[m], 0)
+    if m == "CRC5_BIT":
+        want(1)
+        v = expr(0)
+        if v not in (0, 1):
+            raise AsmError(lineno, "CRC5_BIT takes 0 or 1")
+        return encode(OP_CRC, 5, v)
+
+    ser_subs = {
+        "SER_LD": 0,
+        "SER_NEXT": 1,
+        "SER_LEVEL": 2,
+        "SER_BUSY": 3,
+        "SER_ONES": 4,
+    }
+    if m in ser_subs:
+        want(0)
+        return encode(OP_SER, ser_subs[m], 0)
+    if m == "SER_SET":
+        want(1)
+        v = expr(0)
+        if v not in (0, 1):
+            raise AsmError(lineno, "SER_SET takes 0 or 1")
+        return encode(OP_SER, 5, v)
 
     raise AsmError(lineno, f"unknown mnemonic {op!r}")
 

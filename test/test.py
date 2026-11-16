@@ -518,6 +518,151 @@ async def test_capture_roll(dut):
     assert seen[2] == 0xAA, f"roll sentinel 0x{seen[2]:02X}"
 
 
+def crc16_ref(data: bytes) -> int:
+    """CRC-16/USB, written from the spec as an independent check on the RTL."""
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte
+        for _ in range(8):
+            crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+    return crc ^ 0xFFFF
+
+
+def crc5_ref(bits: list[int]) -> int:
+    """USB token CRC-5 over an explicit bit list, LSB first."""
+    crc = 0x1F
+    for b in bits:
+        mix = (crc & 1) ^ b
+        crc >>= 1
+        if mix:
+            crc ^= 0x14
+    return crc ^ 0x1F
+
+
+def nrzi_levels_ref(byte: int) -> list[int]:
+    """Line levels a USB NRZI + bit-stuffing coder emits for one byte."""
+    levels: list[int] = []
+    level = 1
+    ones = 0
+
+    def emit(bit: int) -> None:
+        nonlocal level
+        level = level if bit else 1 - level
+        levels.append(level)
+
+    for i in range(8):
+        bit = (byte >> i) & 1
+        emit(bit)
+        if bit:
+            ones += 1
+            if ones == 6:
+                emit(0)
+                ones = 0
+        else:
+            ones = 0
+    return levels
+
+
+@cocotb.test()
+async def test_crc_helpers(dut):
+    """CRC-16/USB hits the published check value; CRC-5 matches a reference."""
+    src = """
+        CRC16_RST
+        LDI A, 0x31
+        CRC16_ADD
+        LDI A, 0x32
+        CRC16_ADD
+        LDI A, 0x33
+        CRC16_ADD
+        LDI A, 0x34
+        CRC16_ADD
+        LDI A, 0x35
+        CRC16_ADD
+        LDI A, 0x36
+        CRC16_ADD
+        LDI A, 0x37
+        CRC16_ADD
+        LDI A, 0x38
+        CRC16_ADD
+        LDI A, 0x39
+        CRC16_ADD
+        CRC16_LO
+        OUT UO, A
+        CRC16_HI
+        OUT UO, A
+        CRC5_RST
+        CRC5_BIT 0
+        CRC5_BIT 1
+        CRC5_BIT 0
+        CRC5_BIT 1
+        CRC5_BIT 0
+        CRC5_BIT 1
+        CRC5_BIT 0
+        CRC5_BIT 0
+        CRC5_BIT 0
+        CRC5_BIT 0
+        CRC5_BIT 0
+        CRC5
+        OUT UO, A
+        OUT UO, 0xAA
+        HALT
+    """
+    image = assemble(src)
+    await reset_dut(dut)
+    await load_image(dut, image)
+
+    seen = await collect_uo_changes(dut, 0xAA, limit=9000)
+    assert len(seen) == 4, f"crc outputs {[hex(x) for x in seen]}"
+    lo, hi, crc5_rtl, sentinel = seen
+
+    expected16 = crc16_ref(b"123456789")
+    assert expected16 == 0xB4C8, f"reference CRC-16 is wrong: 0x{expected16:04X}"
+    assert (lo | (hi << 8)) == expected16, f"crc16 0x{hi:02X}{lo:02X} != 0x{expected16:04X}"
+
+    token_bits = [(0x2A >> i) & 1 for i in range(7)] + [0, 0, 0, 0]
+    expected5 = crc5_ref(token_bits)
+    assert crc5_rtl == expected5, f"crc5 0x{crc5_rtl:02X} != 0x{expected5:02X}"
+    assert sentinel == 0xAA
+
+
+@cocotb.test()
+async def test_usb_line_code(dut):
+    """NRZI plus bit stuffing emits the exact stuffed level sequence."""
+    src = """
+        SER_SET 1
+        LDI A, 0x01
+        OUT UIO_OE, A
+        LDI A, 0xFF
+        SER_LD
+loop:
+        SER_BUSY
+        CMP A, 0x01
+        JNZ done
+        SER_NEXT
+        OUT UIO, A
+        OUT UO, 0x01
+        OUT UO, 0x00
+        JMP loop
+done:
+        HALT
+    """
+    image = assemble(src)
+    await reset_dut(dut)
+    await load_image(dut, image)
+
+    levels: list[int] = []
+    prev = 0
+    for _ in range(600):
+        await RisingEdge(dut.clk)
+        uo = int(dut.uo_out.value)
+        if uo == 0x01 and prev != 0x01:
+            levels.append(int(dut.uio_out.value) & 0x01)
+        prev = uo
+
+    expected = nrzi_levels_ref(0xFF)
+    assert levels == expected, f"line levels {levels} != {expected}"
+
+
 @cocotb.test()
 async def test_capture(dut):
     await reset_dut(dut)
@@ -850,7 +995,7 @@ async def test_opcode_sweep(dut):
     RTL-only: the comparison reads architectural registers inside the core.
     """
     nop = isa.encode(isa.OP_MISC, 0, 0)
-    for op in range(12):
+    for op in range(14):
         for sub in range(8):
             image = Image()
             image.program = {
