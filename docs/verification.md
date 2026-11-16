@@ -81,11 +81,11 @@ Yosys with the IHP SG13CMOS5L `typ_1p20V_25C` liberty, `abc` mapping, and
 
 | Metric | Value |
 |---|---:|
-| Mapped cell area | 257,363 µm² |
-| Nominal 6×4 tile area | 751,440 µm² (24 × 202 × 155 µm) |
-| Fraction of nominal area | 34.2% |
-| Sequential cells | 151,963 µm² (59.05%) |
-| Flip-flops | 3,102 |
+| Mapped cell area | 308,377 µm² |
+| Nominal 8×4 tile area | 1,001,920 µm² (32 × 202 × 155 µm) |
+| Fraction of nominal 8×4 area | 30.8% |
+| Fraction of a 6×4 tile set (751,440 µm²) | 41.0% |
+| Sequential cells | 182,483 µm² (59.2%) |
 | Program RAM | 162k µm² (63% of the design) |
 | Latches inferred | 0 |
 | Multiply/divide cells | 0 |

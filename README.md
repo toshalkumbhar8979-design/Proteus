@@ -68,12 +68,12 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Cocotb tests | **25/25 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB NRZI + stuffing, a full USB data packet, opcode sweep, co-simulation) |
 | RTL vs ISS | all 112 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
-| Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells: 34% of the nominal 6×4 area, 26% of the 8×4 allocation |
+| Synthesis | **308,377 µm²** mapped IHP `typ_1p20V_25C` cells: 31% of the 8×4 allocation (41% of a 6×4 tile set, for comparison) |
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
 | Post-route timing | **32 MHz passes all three corners**: slow-corner setup slack **+6.10 ns**, 0 violating paths, hold positive everywhere |
-| Hardened area | 1,289 × 711 µm die; 383,307 µm² of placed standard cells; 7.35 mW typical at 32 MHz |
+| Hardened area | 1,289 × 711 µm die, 383,307 µm² of placed cells, 7.35 mW typical — from the last completed **6×4** run; the 8×4 build is in flight and replaces these when it signs off |
 | Formal | **6 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs, CALL/RET return stack) |
 | FPGA portability | ECP5 25k: 1,611 LUT4 (6%), 544 FF (2%), **65.9 MHz** against the 32 MHz target — mapped and routed, no board needed |
 
@@ -84,7 +84,7 @@ rows under Metal1 to Metal4, with the Metal4 power straps running the full
 height of the die](docs/images/die.png)
 
 *Rendered by KLayout 0.30 from `tt_um_proteus.gds` in the `tt_submission`
-artifact of the passing GDS run, 1800 px across the 1.29 × 0.71 mm 6×4
+artifact of the last completed 6×4 run, 1800 px across the 1.29 × 0.71 mm 6×4
 allocation. The dense field is standard-cell logic under Metal1–Metal3, the
 dark vertical bars are the Metal4 power straps, and the pale margins are fill
 cells. The submitted GDS carries the design only — 58 cells, no pad instances —
@@ -94,7 +94,7 @@ after `gh run download -n tt_submission -D build/sub`.*
 ## One core, every protocol
 
 There is no UART block, no SPI block, no I2C block. The table below is the same
-hardened core — 383,307 µm² of placed cells — running nine different images.
+core running twelve different images across ten protocol roles.
 Every row is a cocotb test against the RTL through the real loader, not a
 hand-written waveform.
 
@@ -118,7 +118,7 @@ on exactness and reconfigurability, not on raw bit rate.
 
 ![Proteus-1 in five scenes: UART, I2C, PS/2, a USB data packet and the capture buffer, each recorded from its cocotb run](docs/images/demo.gif)
 
-*Recorded from five cocotb runs, not drawn: the last byte of the UART image at 417
+*Recorded from five cocotb runs, not drawn: the first byte of the UART image at 417
 clocks per bit, the I2C controller open-drain with the target's ACK, a PS/2 device
 frame, the USB data packet with its NRZI stream, stuffed zeros and CRC-16, and the
 capture buffer filling in roll mode. Same die in every panel — only the image

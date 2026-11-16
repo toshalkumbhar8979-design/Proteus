@@ -199,10 +199,14 @@ leave them static while the CPU is running if the firmware uses them.
 
 ## 5. Program memory choice
 
-| Configuration | Mapped cell area | Fraction of nominal 6x4 | Decision |
+| Configuration | Mapped cell area (D-009) | Fraction of nominal 6x4 | Decision |
 |---|---:|---:|---|
 | 256 x 16 program, 64 x 8 data | 420,028 µm² | 56% | rejected (D-009) |
 | 128 x 16 program, 64 x 8 data | 257,363 µm² | 34% | **selected** |
+
+The table records the program-memory decision as it was measured (D-009). The
+current design, with the 32-entry capture buffer, the CRC registers and the line
+coder, maps to 308,377 µm², which is 31% of the 8×4 allocation.
 
 The 128-word build leaves room for clock-tree buffers, routing, and the
 inevitable timing repair. The trade-off is code size; each protocol demo is
@@ -227,7 +231,8 @@ Compared with an RP2040 PIO state machine, Proteus-1 has a conventional
 processor programming model and a real assembler/ISS, at the cost of less
 parallelism. Compared with a fixed peripheral set, it can become a protocol
 that did not exist at tapeout. The next step is a dual-core or multi-context
-version if the 8x4 template becomes the target.
+version, which the 8x4 allocation has the room for and the ISA does not yet
+have the state for.
 
 ## 7. Timing and clocking
 
@@ -244,7 +249,7 @@ the waits.
 The local Yosys/ABC area run does not include place-and-route parasitics. The
 Tiny Tapeout GDS action is the authority for the final timing and precheck, and
 the 32 MHz build passed it: slow-corner setup slack is +6.10 ns with 0 violating
-paths, and the hardened netlist uses 383,307 µm² of placed cells. `src/config.json`
+paths, and the last hardened 6×4 netlist uses 383,307 µm² of placed cells. `src/config.json`
 and `info.yaml` declare 31.25 ns / 32 MHz; do not raise the clock without a new
 hardened timing run and a fresh protocol-rate check.
 
@@ -258,8 +263,9 @@ hardened timing run and a fresh protocol-rate check.
   long traces.
 - No interrupts. A blocking `WAIT_PIN` stalls the CPU; concurrent protocols
   require interleaving by hand.
-- No SRAM macro. The flop-based program memory is the largest block and the
-  main reason to consider an 8x4 or SRAM revision.
+- No SRAM macro. The flop-based program memory is the largest block at 162k µm²,
+  and the reason a future revision would need the SRAM flow rather than more
+  tiles: 8x4 is already the declared allocation.
 - The I2C examples require external pull-ups and a shared ground, as any I2C bus
   does.
 

@@ -115,15 +115,16 @@ Proteus-1 uses three independent layers:
    flip-flops (2%), and 65.9 MHz against the 32 MHz target. That proves the RTL
    is portable and has margin, though it is not a hardware run.
 
-Synthesis with the IHP `typ_1p20V_25C` library maps to **257,363 µm²**, 34% of
-the nominal 6×4 tile area, with no latches and no multiply/divide cells. The
-256-word program memory was measured at 56% and rejected; the trade-off is
-documented rather than hidden.
+Synthesis with the IHP `typ_1p20V_25C` library maps to **308,377 µm²**, 31% of
+the nominal 8×4 tile area, with no latches and no multiply/divide cells. The
+256-word program memory was measured at 56% of a 6×4 tile set and rejected; the
+trade-off is documented rather than hidden. That mapped figure includes the
+32-entry capture buffer, the CRC registers and the line coder, so it is the
+current design and not the earlier 128-word baseline.
 
-The submission declares the competition's **8×4** allocation, where the same
-mapped cells occupy 26% of the nominal tile area. The hardened figures below are
-the last completed **6×4** run and are kept as the baseline until the 8×4 build
-signs off.
+The hardened figures below are the last completed **6×4** run and are kept as
+the baseline until the 8×4 build signs off; they do not yet include the capture
+depth change or the two helper opcodes.
 
 The design is hardened, not just synthesized. The Tiny Tapeout GDS action
 ([run 40903018243](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/40903018243))
