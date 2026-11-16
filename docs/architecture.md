@@ -33,6 +33,7 @@ therefore be written as a timing diagram.
                        │  A, X, Y, PC[6:0], Z/C/N, 8-deep stack│◄── uio_out[7:0]
                        │  ALU, shifts, pin ops, branches       │──► uio_oe[7:0]
                        │  16-bit cycle timer                   │──► uio_od[7:0]
+                       │  CRC-16, CRC-5, NRZI line coder       │
                        │  32 x 24 capture FIFO                 │
                        └───────────────────────────────────────┘
 ```

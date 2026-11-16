@@ -11,7 +11,7 @@ and time, plus a host loader and a capture FIFO for looking at live buses.
 ![Proteus-1 block diagram: the host loader feeding program and data memory, the
 single-cycle core, pin registers and capture, and the pad ring](docs/images/block_diagram.png)
 
-*One core, two memories, twenty-four pins. Each memory sits directly above the
+*One core, two memories, two protocol helpers, twenty-four pins. Each memory sits directly above the
 core port that addresses it, so every net is a straight stub in a gutter and no
 wire crosses a block. Every arrow is a net that exists in
 [`src/tt_um_proteus.v`](src/tt_um_proteus.v). Source:

@@ -61,7 +61,7 @@
 \node[anchor=base west, font=\sffamily\fontsize{9}{10}\selectfont, text=ink, inner sep=0pt]
   at (0.90,13.34) {\bfseries Proteus-1 \textmd{--- core, memories and pin interface}};
 \node[anchor=base east, font=\sffamily\fontsize{6.3}{7.4}\selectfont, text=quiet, inner sep=0pt]
-  at (22.00,13.34) {6 $\times$ 4 SG13CMOS5L \textperiodcentered{} 32 MHz \textperiodcentered{} single clock domain};
+  at (22.00,13.34) {8 $\times$ 4 SG13CMOS5L \textperiodcentered{} 32 MHz \textperiodcentered{} single clock domain};
 
 % =========================================================== host loader (left)
 \node[unit, minimum width=3.30cm, minimum height=1.95cm, text width=3.00cm] (loader) at (2.55,7.02)
@@ -119,12 +119,19 @@
    per-bit OE\\ and OD\\[3pt]
    {\textcolor{quiet}{24 pins}}};
 
+% ===================================================== protocol helpers (below)
+\node[unit, minimum width=4.10cm, minimum height=1.95cm, text width=3.80cm] (helpers) at (8.35,2.775)
+  {{\ttl PROTOCOL HELPERS}\\[2pt]
+   CRC-16/USB \textperiodcentered{} per byte\\[1pt]
+   CRC-5/USB \textperiodcentered{} per bit\\[1pt]
+   {\textcolor{quiet}{NRZI + bit stuffing}}};
+
 % ============================================================= capture (below)
 \node[unit, minimum width=4.40cm, minimum height=1.95cm, text width=4.10cm] (capture) at (13.45,2.775)
-  {{\ttl CAPTURE FIFO}\\[2pt]
-   8 $\times$ 24 entries\\[1pt]
+  {{\ttl CAPTURE BUFFER}\\[2pt]
+   32 $\times$ 24 entries\\[1pt]
    \{timer[7:0], uio\_in, ui\_in\}\\[1pt]
-   {\textcolor{quiet}{status: full, count}}};
+   {\textcolor{quiet}{FIFO or roll \textperiodcentered{} status: full, count}}};
 
 % ======================================================================== nets
 
@@ -160,6 +167,10 @@
 \draw[data] (21.00,4.85) -- (21.00,3.05) -- (15.65,3.05);
 \node[sig, anchor=south] at (18.30,3.12) {24 pads};
 
+% helper opcodes down from the core, and the capture control beside them
+\draw[ctl] (7.60,5.15) -- (7.60,3.75);
+\node[sig, anchor=east] at (7.48,4.48) {CRC, SER};
+
 % capture enable and pop from the core, and the popped entry back
 \draw[ctl] (14.60,5.15) -- (14.60,3.75);
 \node[sig, anchor=west] at (14.72,4.48) {CAP\_EN, CAP\_POP};
@@ -167,7 +178,7 @@
 \node[sig, anchor=east] at (13.05,4.48) {ui\_in, uio\_in};
 
 % ------------------------------------------------------------------- footnotes
-\node[anchor=north west, text width=9.60cm, align=left,
+\node[anchor=north west, text width=4.80cm, align=left,
       font=\sffamily\fontsize{6.4}{7.9}\selectfont, text=body, inner sep=0pt]
   at (0.90,4.62)
   {Every ordinary instruction retires in one clock; only \texttt{WAIT}, \texttt{WAIT\_PIN},
