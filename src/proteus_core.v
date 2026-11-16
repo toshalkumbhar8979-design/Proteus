@@ -60,6 +60,7 @@ module proteus_core #(
   localparam [4:0] OP_CAP    = 5'd11;
   localparam [4:0] OP_CRC    = 5'd12;
   localparam [4:0] OP_SER    = 5'd13;
+  localparam [4:0] OP_RX     = 5'd14;
 
   // ---------------------------------------------------------------------------
   // Architectural state
@@ -102,6 +103,15 @@ module proteus_core #(
   reg [2:0]          ser_ones;
   reg                ser_level;
   reg                ser_pend;
+
+  // NRZI receiver: the last level seen, whether a reference level is known, the
+  // run of decoded ones, whether the next bit is a stuffed zero, and a sticky
+  // violation latch. This is the mirror of the serialiser above.
+  reg                rx_last;
+  reg                rx_have;
+  reg [2:0]          rx_ones;
+  reg                rx_pend;
+  reg                rx_err;
 
   // ---------------------------------------------------------------------------
   // Decode
@@ -240,6 +250,11 @@ module proteus_core #(
   // OUT/SETB decides which pad the protocol uses.
   // ---------------------------------------------------------------------------
   wire        ser_busy = (ser_bits != 4'd0) || ser_pend;
+
+  // Receiver decode: A carries the sampled line level, so the pad stays owned by
+  // firmware exactly as it does for the serialiser.
+  wire        rx_level = a[0];
+  wire        rx_bit   = (rx_level == rx_last);
   wire        ser_bit  = ser_shift[0];
   wire        ser_next = ser_pend ? ~ser_level : (ser_bit ? ser_level : ~ser_level);
   wire [7:0]  crc16_lo = crc16[7:0]  ^ 8'hFF;
@@ -307,6 +322,11 @@ module proteus_core #(
       ser_ones   <= 3'b0;
       ser_level  <= 1'b1;
       ser_pend   <= 1'b0;
+      rx_last    <= 1'b1;
+      rx_have    <= 1'b0;
+      rx_ones    <= 3'b0;
+      rx_pend    <= 1'b0;
+      rx_err     <= 1'b0;
       for (i = 0; i < 8; i = i + 1) begin
         stack[i] <= 8'b0;
       end
@@ -662,6 +682,65 @@ module proteus_core #(
                   ser_level <= imm[0];
                   ser_pend  <= 1'b0;
                   ser_ones  <= 3'd0;
+                end
+                default: ;
+              endcase
+            end
+
+            // ---------------------------------------------------------------
+            // NRZI receiver, the mirror of OP_SER. The line level arrives in A[0]
+            // and the decoded bit leaves in A[0]: a transition is a 0, a held
+            // level is a 1. After six ones the next bit is the stuffed zero, so it
+            // is consumed with C = 0 rather than returned as data. A stuffed bit
+            // that is not a zero is a violation and is latched in rx_err, because
+            // a receiver that silently resynchronises on bad stuffing turns one
+            // corrupt packet into plausible data.
+            OP_RX: begin
+              case (sub)
+                3'd0: begin                       // RX_RST
+                  rx_last <= 1'b1;
+                  rx_have <= 1'b0;
+                  rx_ones <= 3'd0;
+                  rx_pend <= 1'b0;
+                  rx_err  <= 1'b0;
+                end
+                3'd1: begin                       // RX_BIT: one bit time
+                  if (!rx_have) begin
+                    rx_last <= rx_level;          // first level is the reference
+                    rx_have <= 1'b1;
+                    a       <= 8'b0;
+                    c       <= 1'b0;
+                    z       <= 1'b0;
+                  end else if (rx_pend) begin
+                    rx_pend <= 1'b0;
+                    rx_ones <= 3'd0;
+                    rx_last <= rx_level;
+                    a       <= 8'b0;
+                    c       <= 1'b0;
+                    z       <= rx_bit;            // a stuffed bit must be zero
+                    if (rx_bit) rx_err <= 1'b1;
+                  end else begin
+                    rx_last <= rx_level;
+                    a       <= {7'b0, rx_bit};
+                    c       <= 1'b1;
+                    z       <= 1'b0;
+                    if (rx_bit) begin
+                      if (rx_ones == 3'd5) begin
+                        rx_pend <= 1'b1;
+                        rx_ones <= 3'd0;
+                      end else begin
+                        rx_ones <= rx_ones + 3'd1;
+                      end
+                    end else begin
+                      rx_ones <= 3'd0;
+                    end
+                  end
+                end
+                3'd2: a <= {5'b0, rx_ones};       // RX_ONES
+                3'd3: begin                       // RX_ERR
+                  a <= {7'b0, rx_err};
+                  z <= ~rx_err;
+                  n <= 1'b0;
                 end
                 default: ;
               endcase

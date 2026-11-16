@@ -27,6 +27,7 @@ from proteus_isa import (
     OP_IO,
     OP_LOAD,
     OP_MISC,
+    OP_RX,
     OP_SER,
     OP_SHIFT,
     OP_TIME,
@@ -116,6 +117,11 @@ class ProteusISS:
         self.ser_ones = 0
         self.ser_level = 1
         self.ser_pend = 0
+        self.rx_last = 1
+        self.rx_have = 0
+        self.rx_ones = 0
+        self.rx_pend = 0
+        self.rx_err = 0
         self.ui = 0
         self.uio_in = 0
         self.cycles = 0
@@ -513,6 +519,51 @@ class ProteusISS:
                     self.ser_level = imm & 1
                     self.ser_pend = 0
                     self.ser_ones = 0
+
+            elif op == OP_RX:
+                if sub == 0:
+                    self.rx_last = 1
+                    self.rx_have = 0
+                    self.rx_ones = 0
+                    self.rx_pend = 0
+                    self.rx_err = 0
+                elif sub == 1:
+                    level = self.a & 1
+                    if not self.rx_have:
+                        self.rx_last = level
+                        self.rx_have = 1
+                        self.a = 0
+                        self.c = 0
+                        self.z = 0
+                    else:
+                        bit = 1 if level == self.rx_last else 0
+                        self.rx_last = level
+                        if self.rx_pend:
+                            self.rx_pend = 0
+                            self.rx_ones = 0
+                            if bit:
+                                self.rx_err = 1
+                            self.a = 0
+                            self.c = 0
+                            self.z = bit
+                        else:
+                            self.a = bit
+                            self.c = 1
+                            self.z = 0
+                            if bit:
+                                if self.rx_ones == 5:
+                                    self.rx_pend = 1
+                                    self.rx_ones = 0
+                                else:
+                                    self.rx_ones += 1
+                            else:
+                                self.rx_ones = 0
+                elif sub == 2:
+                    self.a = self.rx_ones & 0xFF
+                elif sub == 3:
+                    self.a = self.rx_err & 1
+                    self.z = 0 if self.rx_err else 1
+                    self.n = 0
 
         # ---- data memory write lands at the end of the tick ----
         if data_write is not None:

@@ -74,10 +74,10 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **25/25 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB NRZI + stuffing, a full USB data packet, opcode sweep, co-simulation) |
-| RTL vs ISS | all 112 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
+| Cocotb tests | **26/26 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB line code transmit and receive, a full USB data packet, opcode sweep, co-simulation) |
+| RTL vs ISS | all 120 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
-| Synthesis | **308,377 µm²** mapped IHP `typ_1p20V_25C` cells: 31% of the 8×4 allocation (41% of a 6×4 tile set, for comparison) |
+| Synthesis | **309,183 µm²** mapped IHP `typ_1p20V_25C` cells: 31% of the 8×4 allocation (41% of a 6×4 tile set, for comparison) |
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
@@ -118,6 +118,7 @@ hand-written waveform.
 | PS/2 | device | ~10.5 kHz (9 × `WAIT 167`) | open-drain clock and data, odd parity | `test_ps2_device` |
 | JTAG | master | TCK half period from `WAIT` | TAP walk to Shift-DR, 32-bit DR scan | `test_jtag_idcode` |
 | USB low speed | data packet | 21 clocks per bit, 1.52 Mbit/s demonstration rate | `SER_LD`/`SER_NEXT` line code, `CRC16_ADD`/`LO`/`HI` payload CRC | `test_usb_data_packet` |
+| USB low speed | packet receiver | 21 clocks per bit | `RX_RST`/`RX_BIT` undo NRZI and stuffing, violation latched | `test_nrzi_receive` |
 | Capture | analyzer | every pin change, 32 entries deep; FIFO or roll mode | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO` | `test_capture`, `test_capture_overflow`, `test_capture_roll` |
 
 Both ends of UART, SPI and I2C are firmware. That is the flexibility claim made
@@ -151,15 +152,16 @@ CALL uart_tx       ; one cycle, 8-deep return stack
 
 ## Protocol helpers on the die
 
-Two small blocks make line-coded protocols firmware-shaped instead of a timing
-argument. Both are original RTL, both are single-cycle, and together they cost
-**4,171 µm²** — 1.4% of the mapped area.
+Three small blocks make line-coded protocols firmware-shaped instead of a timing
+argument. All are original RTL, all are single-cycle, and together they cost
+**4,749 µm²** — 1.5% of the mapped area.
 
 | Block | Instructions | What it does |
 |---|---|---|
 | CRC-16/USB | `CRC16_RST`, `CRC16_ADD`, `CRC16_LO/HI` | one byte per instruction, reflected poly 0xA001, init 0xFFFF; reproduces the published check value `0xB4C8` for `123456789` |
 | CRC-5/USB | `CRC5_RST`, `CRC5_BIT n`, `CRC5` | one bit per instruction for 11-bit token fields, reflected poly 0x14 |
 | USB line coder | `SER_LD`, `SER_NEXT`, `SER_BUSY` | NRZI with bit stuffing: returns the next line level in `A`, so firmware picks the pad |
+| USB line decoder | `RX_RST`, `RX_BIT`, `RX_ONES`, `RX_ERR` | the inverse: takes the sampled level in `A[0]`, returns the data bit, consumes the stuffed zero, flags a violation |
 
 A shift-out loop becomes `SER_NEXT` plus an `OUT`, and each CRC is one
 instruction per byte or bit instead of a software loop. That is what makes the
@@ -215,27 +217,40 @@ because ASIC RAM powers up undefined.
 ## Quick start
 
 Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
-Yosys for synthesis.
+Yosys for synthesis. Everything below runs from the repository root unless the
+comment says otherwise.
 
 ```sh
-# RTL simulation: 25 tests
-cd test
-python3 -m pip install -r requirements.txt
-make -B
-
-# Toolchain unit tests: 7 tests
-cd ..
+# 1. Toolchain unit tests (fast): assembler, disassembler, ISS round-trip.
 python3 -m pytest -q tools/test_isa.py
 
-# Assemble every example into build/programs
+# 2. The whole firmware set, then one image in the ISS with a cycle trace.
 ./scripts/build_programs.sh
-
-# Run one image in the ISS
 python3 tools/proteus_iss.py build/programs/uart_tx.json --cycles 2000 --trace
 
-# Area estimate against the IHP cells (PDK_ROOT must point at IHP-Open-PDK)
+# 3. RTL simulation: 26 cocotb tests, about 90 s, no gate-level netlist needed.
+cd test && python3 -m pip install -r requirements.txt && make -B && cd ..
+
+# 4. Area against the IHP cells (PDK_ROOT must point at IHP-Open-PDK).
 PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh
+
+# 5. Regenerate the block diagram and the demonstration animation.
+make figures && python3 scripts/make_demo_animation.py
 ```
+
+### Writing your own program
+
+A new protocol is an assembly file, not an RTL change:
+
+```sh
+python3 tools/proteus_asm.py programs/uart_tx.s -o build/programs/uart_tx.json
+python3 tools/proteus_iss.py build/programs/uart_tx.json --cycles 2000 --trace
+```
+
+The assembler errors on anything outside the encoding space, and the ISS runs the
+same image the loader will write, so you can check pin timing against the clock
+trace before touching hardware. `programs/*.s` are all under the 128-word budget;
+the disassembler round-trips every encoding (`tools/test_isa.py`).
 
 ## Repository layout
 

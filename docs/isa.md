@@ -305,9 +305,52 @@ ones. To begin a fresh packet, put the line where it belongs with `SER_SET imm`,
 which also clears the stuffing state; a core reset leaves the line at level 1
 with no ones counted, so a program that starts from reset needs nothing else.
 
-### 3.15 Reserved opcodes
+### 3.15 `RX` — NRZI receiver with stuffing removal (`opcode = 14`)
 
-`opcode = 14..31` are reserved. They execute as `NOP` and must not be used.
+| sub | Mnemonic | Operation |
+|---|---|---|
+| 0 | `RX_RST` | clear the reference level, the ones count, the stuffed-bit state and the error latch |
+| 1 | `RX_BIT` | one bit time: sample `A[0]` as the line level; `A` ← decoded data bit; `C = 1` when a data bit was produced, `0` when the sample was consumed; `Z = 1` on a stuffing violation |
+| 2 | `RX_ONES` | `A ← consecutive decoded ones` |
+| 3 | `RX_ERR` | `A ←` the sticky violation latch; sets `Z` when there was no violation |
+| 4 | reserved | no effect |
+| 5 | reserved | no effect |
+| 6 | reserved | no effect |
+| 7 | reserved | no effect |
+
+`RX_BIT` is the inverse of `SER_NEXT`, and like it, it drives no pad: the firmware
+samples the line with `IN` and passes the level in `A[0]`, so pin ownership stays
+with the program.
+
+```
+loop:  WAIT_EDGE UI, 0x01   ; a bit time has started on the line pin
+       IN UI               ; A = the pins, A[0] is the line level
+       RX_BIT              ; A = data bit, C = 1 if this sample was data
+       JNC loop            ; C = 0: it was a stuffed bit or the first sample
+       ...
+```
+
+(`WAIT_PIN0`/`WAIT_PIN1` take a pin **mask**, so a single pin is `0x01`, `0x02`
+and so on, not a bit number.)
+
+Three cases return `C = 0`: the very first sample after `RX_RST`, which only
+establishes the reference level (a receiver cannot know whether the line moved
+before it started listening); the stuffed zero after six ones, which consumes a
+bit time without producing data; and a sample taken while an outstanding stuffed
+bit was owed. A transition on the wire decodes as `0`, a held level as `1`.
+
+If the stuffed bit turns out to be a one, the run of ones has been violated. That
+sets `Z` on the sample and latches `RX_ERR`, and it is deliberately sticky until
+`RX_RST`: a receiver that resynchronises silently after bad stuffing turns one
+corrupt packet into several plausible ones, and the failure surfaces far from its
+cause.
+
+Core reset clears all of it, so a program that starts from reset needs no
+`RX_RST` before its first packet.
+
+### 3.16 Reserved opcodes
+
+`opcode = 15..31` are reserved. They execute as `NOP` and must not be used.
 The assembler emits an error for them.
 
 ## 4. Flags

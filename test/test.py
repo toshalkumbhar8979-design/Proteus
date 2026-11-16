@@ -684,6 +684,90 @@ done:
 
 
 @cocotb.test()
+async def test_nrzi_receive(dut):
+    """The receiver undoes NRZI and stuffing across bytes and flags a violation."""
+    src = """
+        RX_RST
+loop:
+        WAIT_PIN1 UI, 0x02
+        WAIT_PIN0 UI, 0x02
+        IN UI
+        RX_BIT
+        JNC no_bit
+        SHL A
+        OR A, 0x01
+        OUT UO, A
+        OUT UO, 0x00
+no_bit:
+        RX_ERR
+        SHL A
+        SHL A
+        OR A, 0x08              ; bit2 = sticky error, bit3 = loop alive
+        OUT UO, A
+        JMP loop
+    """
+    image = assemble(src)
+    await reset_dut(dut)
+    await load_image(dut, image)
+
+    # Three bytes, chosen so the stream crosses a stuffed bit: 0xF0 ends in four
+    # ones and 0xFF adds six more.
+    data = bytes([0xFF, 0x00, 0xF0])
+    encoded = nrzi_encode_ref(data)
+    # The first level is the reference level, not data: a receiver needs to know
+    # where the line was before the first bit arrives.
+    data_levels = [1] + encoded
+    # Then a deliberate violation: one transition to clear the run of ones, then a
+    # run of held levels, which is more ones than six with no stuffed zero after
+    # them. Ten rather than seven so the violation is still reached if the poll
+    # loop drops one pulse.
+    tail = [1 - encoded[-1]] + [encoded[-1]] * 10
+
+    bits: list[int] = []
+    prev = 0
+
+    async def tick(n: int) -> None:
+        nonlocal prev
+        for _ in range(n):
+            await RisingEdge(dut.clk)
+            uo = int(dut.uo_out.value)
+            if (uo & 0x01) and not (prev & 0x01):
+                bits.append((uo >> 1) & 0x01)
+            prev = uo
+
+    # The handshake period is deliberately far slower than the 21-clock bit time a
+    # real link would use: this test checks that the decoder is correct, not how
+    # fast the firmware can poll, and a period the loop cannot keep up with would
+    # silently drop bits instead of failing.
+    async def pulse(level: int) -> None:
+        # Bit 7 is CS_N: it must stay high or the loader holds the core in reset.
+        dut.ui_in.value = 0x80 | level | 0x02   # line level plus the bit-valid pulse
+        await tick(30)
+        dut.ui_in.value = 0x80 | level          # valid low until the next bit
+        await tick(90)
+
+    for level in data_levels:
+        await pulse(level)
+    await tick(120)
+
+    packed = bytes(
+        sum(b << k for k, b in enumerate(bits[i:i + 8]))
+        for i in range(0, len(data) * 8, 8)
+    )
+    assert len(bits) == len(data) * 8, f"{len(bits)} data bits, expected {len(data) * 8}"
+    assert packed == data, f"decoded {packed.hex()} != {data.hex()}"
+    assert (int(dut.uo_out.value) >> 2) & 0x01 == 0, "clean stream raised a violation"
+
+    # Seven held levels after six ones is seven ones with no stuffed zero, which
+    # the receiver must report rather than resynchronise on.
+    for level in tail:
+        await pulse(level)
+    await tick(120)
+    err = (int(dut.uo_out.value) >> 2) & 0x01
+    assert err == 1, "stuffing violation was not flagged"
+
+
+@cocotb.test()
 async def test_usb_data_packet(dut):
     """A firmware data packet decodes to SYNC, PID, payload and a valid CRC-16."""
     await reset_dut(dut)

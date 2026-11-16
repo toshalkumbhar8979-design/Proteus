@@ -31,7 +31,7 @@ loader, the capture FIFO — exists to make that argument usable and checkable.
 | Host port | SPI mode-0 loader, 32-bit frames, program readback |
 | Helpers | CRC-16/USB per byte, CRC-5/USB per bit, NRZI + bit-stuffing serialiser, for 4,171 µm² |
 
-The ISA has fourteen instruction classes and 112 defined encodings. The encoding is
+The ISA has fifteen instruction classes and 120 defined encodings. The encoding is
 regular enough for a small decoder and readable enough for hand-written
 firmware. The complete reference is in [`isa.md`](isa.md).
 
@@ -97,10 +97,10 @@ Proteus-1 uses three independent layers:
    would see, not internal signals.
 2. **Exhaustive and randomized RTL/ISS lock-step.** Every opcode/subop pair in
    the 12 x 8 encoding space runs on both models for 30 clocks, then a generated
-   program containing all fourteen opcode classes runs for 1,000 enabled clocks.
+   program containing all fifteen opcode classes runs for 1,000 enabled clocks.
    After every clock, every architectural register must match the Python model.
    A mismatch prints the instruction, PC, and the first differing state.
-3. **Toolchain unit tests.** Eight tests cover all 112 encodings, every mnemonic,
+3. **Toolchain unit tests.** Eight tests cover all 120 encodings, every mnemonic,
    directives, assembler errors, ISS arithmetic, exact `WAIT` semantics, and
    stack behaviour.
 4. **Formal properties.** Six invariants are proven with yosys SAT, each as a
@@ -115,7 +115,7 @@ Proteus-1 uses three independent layers:
    flip-flops (2%), and 65.9 MHz against the 32 MHz target. That proves the RTL
    is portable and has margin, though it is not a hardware run.
 
-Synthesis with the IHP `typ_1p20V_25C` library maps to **308,377 µm²**, 31% of
+Synthesis with the IHP `typ_1p20V_25C` library maps to **309,183 µm²**, 31% of
 the nominal 8×4 tile area, with no latches and no multiply/divide cells. The
 256-word program memory was measured at 56% of a 6×4 tile set and rejected; the
 trade-off is documented rather than hidden. That mapped figure includes the

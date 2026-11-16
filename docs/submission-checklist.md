@@ -69,7 +69,7 @@ to a human judge.
 
 ## Claims to keep honest
 
-- The local 308,377 µm² number is a synthesis estimate for the current design;
+- The local 309,183 µm² number is a synthesis estimate for the current design;
   the hardened numbers are 383,307 µm² of placed cells in a 902,417 µm² core,
   from the last completed 6×4 run.
 - The SPI target is mode 0 only.

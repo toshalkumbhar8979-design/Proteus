@@ -31,6 +31,7 @@ from proteus_isa import (
     OP_BRANCH,
     OP_CAP,
     OP_CRC,
+    OP_RX,
     OP_SER,
     OP_IO,
     OP_LOAD,
@@ -421,6 +422,16 @@ def encode_instruction(op: str, args: list[str], symbols: dict[str, int], lineno
         if v not in (0, 1):
             raise AsmError(lineno, "SER_SET takes 0 or 1")
         return encode(OP_SER, 5, v)
+
+    rx_subs = {
+        "RX_RST": 0,
+        "RX_BIT": 1,
+        "RX_ONES": 2,
+        "RX_ERR": 3,
+    }
+    if m in rx_subs:
+        want(0)
+        return encode(OP_RX, rx_subs[m], 0)
 
     raise AsmError(lineno, f"unknown mnemonic {op!r}")
 

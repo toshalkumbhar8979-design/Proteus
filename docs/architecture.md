@@ -170,12 +170,13 @@ an independent multi-byte NRZI + stuffing encoder, then decodes it back to bytes
 and compares those against the packet it asked for, so a boundary error cannot
 hide inside a per-byte view.
 
-Both blocks cost 3,943 um2 together, 1.3% of the mapped area, and both are
+The three blocks cost 4,749 um2 together, 1.5% of the mapped area, and all are
 covered by tests rather than asserted: the CRC test checks the standard check
 value and a reference CRC-5, the line-coder test compares the emitted level
 sequence against an independent NRZI + stuffing reference including the stuffed
-zero after six ones, and the packet test covers the stream across byte
-boundaries.
+zero after six ones, the packet test covers the stream across byte boundaries,
+and the receiver test drives a reference encoder into `RX_BIT` and checks both
+the decoded bytes and the violation latch.
 
 ## 4. Host loader
 
@@ -206,7 +207,7 @@ leave them static while the CPU is running if the firmware uses them.
 
 The table records the program-memory decision as it was measured (D-009). The
 current design, with the 32-entry capture buffer, the CRC registers and the line
-coder, maps to 308,377 µm², which is 31% of the 8×4 allocation.
+coder, maps to 309,183 µm², which is 31% of the 8×4 allocation.
 
 The 128-word build leaves room for clock-tree buffers, routing, and the
 inevitable timing repair. The trade-off is code size; each protocol demo is
