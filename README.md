@@ -116,6 +116,15 @@ concrete: the hard part of either role is a program, not a hard macro. The price
 is that peak throughput is set by the instruction loop, so this design competes
 on exactness and reconfigurability, not on raw bit rate.
 
+![Proteus-1 in five scenes: UART, I2C, PS/2, a USB data packet and the capture buffer, each recorded from its cocotb run](docs/images/demo.gif)
+
+*Recorded from five cocotb runs, not drawn: the last byte of the UART image at 417
+clocks per bit, the I2C controller open-drain with the target's ACK, a PS/2 device
+frame, the USB data packet with its NRZI stream, stuffed zeros and CRC-16, and the
+capture buffer filling in roll mode. Same die in every panel — only the image
+loaded over the loader changes. Rebuild with `python3
+scripts/make_demo_animation.py`; its docstring gives the five dump commands.*
+
 ![JTAG scan waveform: TCK, TMS, TDI and TDO captured from the cocotb run, with
 the sampled bits under the clock edges](docs/images/jtag_waveform.png)
 
@@ -237,7 +246,7 @@ programs/  assembly sources for UART, SPI, I2C, USB packets, capture, self-test
 test/      cocotb testbench and protocol tests
 docs/      architecture, ISA, datasheet, verification report, competition write-up
 host/      MicroPython loader for RP2350 / any SPI host
-scripts/   synthesis and program-build helpers
+scripts/   synthesis, area, formal and figure/animation helpers
 ```
 
 ## Documentation
