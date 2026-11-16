@@ -31,7 +31,7 @@ loader, the capture FIFO — exists to make that argument usable and checkable.
 | Host port | SPI mode-0 loader, 32-bit frames, program readback |
 | Helpers | CRC-16/USB per byte, CRC-5/USB per bit, NRZI + bit-stuffing serialiser, for 4,171 µm² |
 
-The ISA has twelve instruction classes and 96 defined encodings. The encoding is
+The ISA has fourteen instruction classes and 112 defined encodings. The encoding is
 regular enough for a small decoder and readable enough for hand-written
 firmware. The complete reference is in [`isa.md`](isa.md).
 

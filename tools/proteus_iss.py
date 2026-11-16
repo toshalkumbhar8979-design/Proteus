@@ -474,8 +474,6 @@ class ProteusISS:
                 if sub == 0:
                     self.ser_shift = self.a & 0xFF
                     self.ser_bits = 8
-                    self.ser_ones = 0
-                    self.ser_level = 1
                     self.ser_pend = 0
                 elif sub == 1:
                     busy = self.ser_bits != 0 or self.ser_pend

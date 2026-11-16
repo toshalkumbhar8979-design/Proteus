@@ -12,7 +12,7 @@ the status column only with evidence; do not tick an item because it is planned.
 | Architecture documentation | `docs/architecture.md` | **done** |
 | Instruction-set documentation | `docs/isa.md` | **done** |
 | Assembler or toolchain | `tools/proteus_asm.py`, `tools/proteus_isa.py` | **done** |
-| Example programs | `programs/*.s` (12 images) | **done** |
+| Example programs | `programs/*.s` (13 images) | **done** |
 | Verification write-up | `docs/verification.md` | **done** |
 | UART demonstrated | `programs/uart_tx.s`, `uart_rx.s`; tests | **done (RTL)** |
 | SPI demonstrated | `programs/spi_master.s`, `spi_master_cpol1.s`, `spi_target.s`; tests | **done (RTL, master modes 0–3, target mode 0)** |

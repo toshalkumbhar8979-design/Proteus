@@ -622,12 +622,10 @@ module proteus_core #(
             // ---------------------------------------------------------------
             OP_SER: begin
               case (sub)
-                3'd0: begin                       // SER_LD: latch A, idle level 1
+                3'd0: begin                       // SER_LD: latch A, keep line state
                   ser_shift <= a;
                   ser_bits  <= 4'd8;
-                  ser_ones  <= 3'd0;
-                  ser_level <= 1'b1;
-                  ser_pend  <= 1'b0;
+                  ser_pend  <= 1'b0;              // abandon a pending stuff bit
                 end
                 3'd1: begin                       // SER_NEXT: one bit time
                   if (ser_pend) begin

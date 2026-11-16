@@ -13,8 +13,8 @@ python3 -m pip install -r requirements.txt
 make -B
 ```
 
-Expected result: `TESTS=21 PASS=21 FAIL=0 SKIP=0`. Under `GATES=yes` the three
-white-box tests are skipped: `TESTS=21 PASS=18 FAIL=0 SKIP=3`.
+Expected result: `TESTS=25 PASS=25 FAIL=0 SKIP=0`. Under `GATES=yes` the three
+white-box tests are skipped: `TESTS=25 PASS=22 FAIL=0 SKIP=3`.
 
 ## What is covered
 
@@ -34,6 +34,7 @@ white-box tests are skipped: `TESTS=21 PASS=18 FAIL=0 SKIP=3`.
 | `test_capture` / `test_capture_overflow` / `test_capture_roll` | timestamped pin-change buffer, full/overflow status, roll mode keeping the newest 32 |
 | `test_crc_helpers` | CRC-16/USB against the published check value, CRC-5 against a reference |
 | `test_usb_line_code` | NRZI + bit-stuffing level sequence against an independent reference |
+| `test_usb_data_packet` | firmware emits SYNC, PID, payload and CRC-16/USB; the decoded bytes and the level stream are compared against independent references |
 | `test_pin_wait` | level waits on `ui_in` |
 | `test_timer_cosim` | timer clear, atomic latch, wrap past 255 cycles |
 | `test_opcode_sweep` | all 112 opcode/subop encodings against the ISS |

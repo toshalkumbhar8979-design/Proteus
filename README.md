@@ -18,6 +18,26 @@ wire crosses a block. Every arrow is a net that exists in
 [`docs/figures/block_diagram.tex`](docs/figures/block_diagram.tex); rebuild with
 `make figures`.*
 
+## In sixty seconds
+
+Most entries in this competition demonstrate a protocol; Proteus-1 makes the
+choice of protocol a firmware decision, then tries to remove every reason that
+decision could be wrong. The ISA is built so that **a program is also a timing
+specification**: every instruction retires in exactly one clock, `WAIT n` burns
+exactly `n` clocks, and a pin can be tested, toggled, or released open-drain in a
+single instruction, so a bit period is a number in the source rather than a
+property frozen at tape-out. That is what lets one 8×4 die be a UART, an SPI
+controller in all four modes, an I2C target at two rates, a PS/2 device and a JTAG
+master with no mode switch, and what makes a new protocol an assembly file instead
+of a new chip. The unusual parts are the verification, the observability and the
+line-code hardware: `WAIT` and the pin edges are proved by formal invariants, the
+assembler, ISS and RTL are held together by an exhaustive encoding sweep and a
+1,000-cycle randomised co-simulation, a 32-entry capture buffer with a roll mode
+lets the chip record a live bus as well as drive it, and CRC-16/USB, CRC-5/USB and
+an NRZI-plus-stuffing serialiser mean line-coded protocols cost firmware loops
+instead of bit budgets. Everything claimed here reproduces from a command in this
+file, including the mistakes the verification found.
+
 ## Why a protocol CPU?
 
 Protocol emulation is a **timing** problem, not a peripheral checklist.
@@ -45,8 +65,8 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **24/24 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB NRZI + stuffing, opcode sweep, co-simulation) |
-| RTL vs ISS | all 96 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
+| Cocotb tests | **25/25 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB NRZI + stuffing, a full USB data packet, opcode sweep, co-simulation) |
+| RTL vs ISS | all 112 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
 | Synthesis | **257,363 µm²** mapped IHP `typ_1p20V_25C` cells: 34% of the nominal 6×4 area, 26% of the 8×4 allocation |
 | Latches / multiply / divide | none (`check -assert` passes) |
@@ -74,7 +94,7 @@ after `gh run download -n tt_submission -D build/sub`.*
 ## One core, every protocol
 
 There is no UART block, no SPI block, no I2C block. The table below is the same
-hardened core — 383,307 µm² of placed cells — running eight different images.
+hardened core — 383,307 µm² of placed cells — running nine different images.
 Every row is a cocotb test against the RTL through the real loader, not a
 hand-written waveform.
 
@@ -88,6 +108,7 @@ hand-written waveform.
 | I2C | target | 100 kHz and 400 kHz | open-drain ACK, edge waits on SCL | `test_i2c_target`, `test_i2c_target_400k` |
 | PS/2 | device | ~10.5 kHz (9 × `WAIT 167`) | open-drain clock and data, odd parity | `test_ps2_device` |
 | JTAG | master | TCK half period from `WAIT` | TAP walk to Shift-DR, 32-bit DR scan | `test_jtag_idcode` |
+| USB low speed | data packet | 21 clocks per bit, 1.52 Mbit/s demonstration rate | `SER_LD`/`SER_NEXT` line code, `CRC16_ADD`/`LO`/`HI` payload CRC | `test_usb_data_packet` |
 | Capture | analyzer | every pin change, 32 entries deep; FIFO or roll mode | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO` | `test_capture`, `test_capture_overflow`, `test_capture_roll` |
 
 Both ends of UART, SPI and I2C are firmware. That is the flexibility claim made
@@ -180,6 +201,7 @@ because ASIC RAM powers up undefined.
 | [`ps2_device.s`](programs/ps2_device.s) | PS/2 device transmit: 11-bit frame, odd parity, open-drain clock/data |
 | [`jtag_idcode.s`](programs/jtag_idcode.s) | JTAG master: resets a TAP, walks to Shift-DR, clocks 32 bits, checks a default IDCODE |
 | [`capture_demo.s`](programs/capture_demo.s) | Capture FIFO records pin changes, firmware drains it |
+| [`usb_data_tx.s`](programs/usb_data_tx.s) | USB low-speed data packet: SYNC, PID, two payload bytes, CRC-16/USB, NRZI + stuffing |
 
 ## Quick start
 
@@ -187,7 +209,7 @@ Prerequisites: Icarus Verilog 12+, Python 3.11+, `cocotb` 2.x, `pytest`, and
 Yosys for synthesis.
 
 ```sh
-# RTL simulation: 24 tests
+# RTL simulation: 25 tests
 cd test
 python3 -m pip install -r requirements.txt
 make -B
@@ -211,7 +233,7 @@ PDK_ROOT=$HOME/pdk/IHP-Open-PDK ./scripts/synth_area.sh
 ```
 src/       synthesizable Verilog and the Tiny Tapeout top module
 tools/     assembler, disassembler, ISS, toolchain tests
-programs/  assembly sources for UART, SPI, I2C, capture, self-test
+programs/  assembly sources for UART, SPI, I2C, USB packets, capture, self-test
 test/      cocotb testbench and protocol tests
 docs/      architecture, ISA, datasheet, verification report, competition write-up
 host/      MicroPython loader for RP2350 / any SPI host

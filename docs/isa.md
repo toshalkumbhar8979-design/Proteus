@@ -269,7 +269,7 @@ initial value.
 
 | sub | Mnemonic | Operation |
 |---|---|---|
-| 0 | `SER_LD` | latch `A` (8 bits, LSB first), clear the ones counter, line level ← 1 |
+| 0 | `SER_LD` | latch `A` (8 bits, LSB first); keeps the line level and ones count |
 | 1 | `SER_NEXT` | one bit time: `A ← next line level`, advancing the shifter or emitting a stuffed 0 |
 | 2 | `SER_LEVEL` | `A ← line level` |
 | 3 | `SER_BUSY` | `A ← 1` while data bits or a stuffed 0 remain; sets `Z`, `N` |
@@ -296,6 +296,14 @@ loop:  SER_BUSY
 With nothing left to send, `SER_NEXT` returns the current level without advancing,
 so a program that ignores `SER_BUSY` repeats a level instead of fabricating a bit
 that was never in the byte.
+
+`SER_LD` deliberately **keeps** the running level and the ones count: loading the
+next byte of a packet continues the same NRZI stream and the same stuffing
+window, which is what USB requires across byte boundaries. Restarting either one
+per byte would inject a false transition and could produce seven consecutive
+ones. To begin a fresh packet, put the line where it belongs with `SER_SET imm`,
+which also clears the stuffing state; a core reset leaves the line at level 1
+with no ones counted, so a program that starts from reset needs nothing else.
 
 ### 3.15 Reserved opcodes
 

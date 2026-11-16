@@ -539,28 +539,48 @@ def crc5_ref(bits: list[int]) -> int:
     return crc ^ 0x1F
 
 
-def nrzi_levels_ref(byte: int) -> list[int]:
-    """Line levels a USB NRZI + bit-stuffing coder emits for one byte."""
+def nrzi_encode_ref(data: bytes) -> list[int]:
+    """Line levels for a byte stream: one NRZI + stuffing run across the bytes."""
     levels: list[int] = []
     level = 1
     ones = 0
-
-    def emit(bit: int) -> None:
-        nonlocal level
-        level = level if bit else 1 - level
-        levels.append(level)
-
-    for i in range(8):
-        bit = (byte >> i) & 1
-        emit(bit)
-        if bit:
-            ones += 1
-            if ones == 6:
-                emit(0)
+    for byte in data:
+        for i in range(8):
+            bit = (byte >> i) & 1
+            level = level if bit else 1 - level
+            levels.append(level)
+            if bit:
+                ones += 1
+                if ones == 6:
+                    level = 1 - level          # a stuffed zero is a transition
+                    levels.append(level)
+                    ones = 0
+            else:
                 ones = 0
-        else:
-            ones = 0
     return levels
+
+
+def nrzi_levels_ref(byte: int) -> list[int]:
+    """Line levels a USB NRZI + bit-stuffing coder emits for one byte."""
+    return nrzi_encode_ref(bytes([byte]))
+
+
+def nrzi_decode_ref(levels: list[int]) -> list[int]:
+    """Inverse of nrzi_encode_ref: remove the stuffed bits, then undo NRZI."""
+    raw: list[int] = []
+    level = 1
+    for lv in levels:
+        raw.append(1 if lv == level else 0)
+        level = lv
+    bits: list[int] = []
+    ones = 0
+    for bit in raw:
+        if ones == 6 and bit == 0:
+            ones = 0                        # the stuffed zero consumed no data
+            continue
+        bits.append(bit)
+        ones = ones + 1 if bit else 0
+    return bits
 
 
 @cocotb.test()
@@ -661,6 +681,38 @@ done:
 
     expected = nrzi_levels_ref(0xFF)
     assert levels == expected, f"line levels {levels} != {expected}"
+
+
+@cocotb.test()
+async def test_usb_data_packet(dut):
+    """A firmware data packet decodes to SYNC, PID, payload and a valid CRC-16."""
+    await reset_dut(dut)
+    image = load_source("usb_data_tx.s")
+    await load_image(dut, image)
+
+    # One level per bit strobe, exactly as test_usb_line_code collects them.
+    levels: list[int] = []
+    prev = 0
+    for _ in range(4000):
+        await RisingEdge(dut.clk)
+        uo = int(dut.uo_out.value)
+        if uo == 0x01 and prev != 0x01:
+            levels.append(int(dut.uio_out.value) & 0x01)
+        prev = uo
+        if uo == 0xAA:
+            break
+    else:
+        raise AssertionError("the packet never reached its sentinel")
+
+    payload = bytes([0x11, 0x22])
+    expected_bytes = [0x80, 0xC3] + list(payload) + list(crc16_ref(payload).to_bytes(2, "little"))
+    expected_levels = nrzi_encode_ref(bytes(expected_bytes))
+    assert levels == expected_levels, f"levels {levels} != {expected_levels}"
+
+    bits = nrzi_decode_ref(levels)
+    assert len(bits) % 8 == 0, f"{len(bits)} bits is not a whole number of bytes"
+    got = [sum(bits[i * 8 + k] << k for k in range(8)) for i in range(len(bits) // 8)]
+    assert got == expected_bytes, f"packet {[hex(x) for x in got]} != {[hex(x) for x in expected_bytes]}"
 
 
 @cocotb.test()
