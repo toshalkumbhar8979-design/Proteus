@@ -94,12 +94,15 @@ rows under Metal1 to Metal4, with the Metal4 power straps running the full
 height of the die](docs/images/die.png)
 
 *Rendered by KLayout 0.30 from `tt_um_proteus.gds` in the `tt_submission`
-artifact of the signed-off 8×4 run (commit `18f08e0`), 1800 px across the 1.72 × 0.71 mm 8×4
-allocation. The dense field is standard-cell logic under Metal1–Metal3, the
-dark vertical bars are the Metal4 power straps, and the pale margins are fill
-cells: 469,393 µm² of logic in a 1,208,170 µm² core, 38.9% full, which is why the right-hand end of the core is empty rather than cropped. The submitted GDS carries the design only — 28,191 standard cells plus fill, no pad instances —
-so this is the design area, not the assembled chip. Rebuild with `make die`
-after `gh run download -n tt_submission -D build/sub`.*
+artifact of the signed-off 8×4 run (commit `18f08e0`), 1800 px across the
+1.72 × 0.71 mm allocation. The dense field is standard-cell logic under
+Metal1–Metal3, the dark vertical bars are the Metal4 power straps, and the
+pale margins are fill cells: 469,393 µm² of logic in a 1,208,170 µm² core,
+38.9% full, which is why the right-hand end of the core is empty rather than
+cropped. The submitted GDS carries the design only — 28,191 standard cells
+plus fill, no pad instances — so this is the design area, not the assembled
+chip. Rebuild with `make die` after
+`gh run download 43957356626 -n tt_submission -D build/sub`.*
 
 ## One core, every protocol
 
