@@ -27,9 +27,9 @@ loader, the capture FIFO — exists to make that argument usable and checkable.
 | Data | 64 × 8 RAM, direct and `X`-indexed |
 | Pins | 8 in, 8 out, 8 bidir with per-bit output enable and open-drain |
 | Timing | 16-bit free-running cycle counter; `WAIT`, `WAIT_PIN`, `WAIT_EDGE` |
-| Capture | 8 × 24 FIFO of `{timer[7:0], uio_in, ui_in}` on pin changes |
+| Capture | 32 × 32 FIFO of `{timer[15:0], uio_in, ui_in}` on pin changes |
 | Host port | SPI mode-0 loader, 32-bit frames, program readback |
-| Helpers | CRC-16/USB per byte, CRC-5/USB per bit, NRZI + bit-stuffing serialiser, for 4,171 µm² |
+| Helpers | CRC-16/USB per byte, CRC-5/USB per bit, NRZI + bit-stuffing serialiser with its receiver, and the differential J/K mapper, for about 4.2k µm² |
 
 The ISA has fifteen instruction classes and 120 defined encodings. The encoding is
 regular enough for a small decoder and readable enough for hand-written
@@ -49,7 +49,7 @@ released, so I2C and wired-OR buses need no external glue and no board hack.
 Target-role I2C is firmware, not a special case in silicon.
 
 **The emulator can observe.** The capture FIFO records 32 pin transitions with
-8-bit timestamps while the CPU runs. The same chip that drives a bus can capture
+16-bit timestamps while the CPU runs. The same chip that drives a bus can capture
 it, drain the FIFO, and decode or replay the waveform. That is the "protocol
 analyzer" half of the tool, and it is useful before a protocol is understood
 well enough to emulate it.

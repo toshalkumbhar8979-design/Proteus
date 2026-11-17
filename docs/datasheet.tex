@@ -269,7 +269,7 @@ timing means the part runs down to DC. On an ECP5-25F FPGA the same RTL closes a
 Program memory & 128 \(\times\) 16 & word \texttt{0x00}--\texttt{0x7F}; host-loaded, volatile\\
 Data memory & 64 \(\times\) 8 & byte \texttt{0x00}--\texttt{0x3F} via \texttt{(X)} or \texttt{(imm)}\\
 Return stack & 8 \(\times\) 8 & managed by \texttt{CALL}/\texttt{RET}; circular\\
-Capture buffer & 32 \(\times\) 24 & \texttt{CAP\_POP}, then \texttt{CAP\_UI}/\texttt{UIO}/\texttt{TS}\\
+Capture buffer & 32 \(\times\) 32 & \texttt{CAP\_POP}, then \texttt{CAP\_UI}/\texttt{UIO}/\texttt{TS}/\texttt{TSH}\\
 Cycle counter & 16 & \texttt{TMR\_LO} latches the high byte, \texttt{TMR\_HI} reads it\\
 CRC-16 / CRC-5 & 16 / 5 & reset to \texttt{0xFFFF} / \texttt{0x1F}\\
 Identity & 8 & \texttt{ID} returns \texttt{0xA1}\\
@@ -303,9 +303,9 @@ Sixteen bits per instruction: \texttt{opcode[15:11]}, \texttt{subop[10:8]},
 8 & \texttt{ALUX} & the ALU table with \texttt{X} as the operand\\
 9 & \texttt{ALUY} & the ALU table with \texttt{Y} as the operand\\
 10 & \texttt{TIMER} & \texttt{TMR\_LO}, \texttt{TMR\_HI}, \texttt{TMR\_CLR}, \texttt{ID}\\
-11 & \texttt{CAP} & \texttt{CAP\_EN} (FIFO/roll), \texttt{CAP\_POP}, \texttt{CAP\_UI}, \texttt{CAP\_UIO}, \texttt{CAP\_TS}, \texttt{CAP\_STATUS}, \texttt{CAP\_CLR}\\
+11 & \texttt{CAP} & \texttt{CAP\_EN} (FIFO/roll), \texttt{CAP\_POP}, \texttt{CAP\_UI}, \texttt{CAP\_UIO}, \texttt{CAP\_TS}, \texttt{CAP\_TSH}, \texttt{CAP\_STATUS}, \texttt{CAP\_CLR}\\
 12 & \texttt{CRC} & \texttt{CRC16\_RST/ADD/LO/HI}, \texttt{CRC5\_RST/BIT}, \texttt{CRC5}\\
-13 & \texttt{SER} & \texttt{SER\_LD}, \texttt{SER\_NEXT}, \texttt{SER\_LEVEL}, \texttt{SER\_BUSY}, \texttt{SER\_ONES}, \texttt{SER\_SET}\\
+13 & \texttt{SER} & \texttt{SER\_LD}, \texttt{SER\_NEXT}, \texttt{SER\_LEVEL}, \texttt{SER\_BUSY}, \texttt{SER\_ONES}, \texttt{SER\_SET}, \texttt{SER\_JK}\\
 14 & \texttt{RX} & \texttt{RX\_RST}, \texttt{RX\_BIT}, \texttt{RX\_ONES}, \texttt{RX\_ERR}\\
 15--31 & reserved & execute as \texttt{NOP}; the assembler rejects them\\
 \bottomrule
@@ -366,7 +366,7 @@ I2C controller & \texttt{i2c\_master.s}, \texttt{\_400k.s} & 100\,kHz / 386\,kHz
 I2C target & \texttt{i2c\_target.s} & same two rates & address \texttt{0x28}\\
 PS/2 device & \texttt{ps2\_device.s} & 10.5\,kHz & \textbf{transmit only}\\
 JTAG master & \texttt{jtag\_idcode.s} & firmware-paced & reads IDCODE, \textbf{no IR scan}\\
-USB framing & \texttt{usb\_data\_tx.s} & 21 clocks/bit & \textbf{1.6\,\% fast}, no SE0\\
+USB framing & \texttt{usb\_data\_tx.s} & 21/22-clock dither & differential J/K, SE0, rate inside 1.5\,\%\\
 Logic analyser & \texttt{capture\_demo.s} & every clock & 32 entries, FIFO or roll\\
 \bottomrule
 \end{tabularx}
@@ -389,8 +389,9 @@ Logic analyser & \texttt{capture\_demo.s} & every clock & 32 entries, FIFO or ro
   \item \textbf{JTAG is a master that reads IDCODE} without an IR scan, valid
         because IEEE 1149.1 places IDCODE in the instruction register out of reset.
   \item \textbf{USB is line code and packet structure}, not a compliant PHY: the
-        bit period is 1.6\,\% fast and end-of-packet SE0 cannot be expressed on
-        one line pin.
+        rate is dithered inside 1.5\,\% and SE0 is driven, but there is no
+        transceiver, no board pull-up, and the eight bit slots assume a packet
+        that needs no stuffed bit.
   \item \textbf{Program memory is volatile} and undefined at power-up; the host
         must load an image before \texttt{run} = 1.
   \item \textbf{Opcodes 15--31 are reserved} and execute as \texttt{NOP}. Firmware

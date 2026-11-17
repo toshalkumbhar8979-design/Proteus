@@ -90,7 +90,7 @@ module proteus_core #(
   reg [7:0]          wait_mask;
   reg [15:0]         wait_ref;
 
-  reg [23:0]         cap_rd;
+  reg [31:0]         cap_rd;
 
   // Protocol helpers. crc16 is one byte step away from a USB data-packet CRC;
   // the serialiser holds the byte being line-coded, how much of it is left, how
@@ -239,7 +239,7 @@ module proteus_core #(
   wire cap_en_val  = imm[0];
   wire cap_roll_val = imm[1];
 
-  wire [23:0] cap_head;
+  wire [31:0] cap_head;
   wire [7:0]  cap_status;
 
   // ---------------------------------------------------------------------------
@@ -268,7 +268,7 @@ module proteus_core #(
       .rst_n     (rst_n),
       .en        (en),
       .pins      (pins),
-      .timestamp (timer[7:0]),
+      .timestamp (timer),
       .set_en    (cap_set_en),
       .en_val    (cap_en_val),
       .roll_val  (cap_roll_val),
@@ -314,7 +314,7 @@ module proteus_core #(
       wait_kind  <= 3'b0;
       wait_mask  <= 8'b0;
       wait_ref   <= 16'b0;
-      cap_rd     <= 24'b0;
+      cap_rd     <= 32'b0;
       crc16      <= 16'hFFFF;
       crc5       <= 5'h1F;
       ser_shift  <= 8'b0;
@@ -606,9 +606,10 @@ module proteus_core #(
                 3'd1: cap_rd <= cap_head;
                 3'd2: a <= cap_rd[7:0];
                 3'd3: a <= cap_rd[15:8];
-                3'd4: a <= cap_rd[23:16];
+                3'd4: a <= cap_rd[23:16];        // timestamp low byte
                 3'd5: a <= cap_status;
-                3'd6: cap_rd <= 24'b0;
+                3'd6: cap_rd <= 32'b0;
+                3'd7: a <= cap_rd[31:24];        // timestamp high byte
                 default: ;
               endcase
             end
@@ -683,6 +684,11 @@ module proteus_core #(
                   ser_pend  <= 1'b0;
                   ser_ones  <= 3'd0;
                 end
+                // SER_JK: the differential pair for the current line state,
+                // D- in bit 0 and D+ in bit 1. J (idle for low speed) is D-
+                // high, K is D- low, so a two-pin transmitter reaches J, K and
+                // SE0 (write 0x00) without a second helper or a branch.
+                3'd6: a <= ser_level ? 8'h01 : 8'h02;
                 default: ;
               endcase
             end

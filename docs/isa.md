@@ -16,7 +16,7 @@ disagree, that is a bug; fix one of them in the same commit.
 | Program memory | 128 × 16 bits | Loaded by host; 7-bit address |
 | Data memory | 64 × 8 bits | Byte-addressed; `X[5:0]` or direct `imm[5:0]` |
 | Cycle counter | 16 bits | Free-running when the core is enabled |
-| Capture | 32 × 24 bits | `{cycle[7:0], uio_in[7:0], ui_in[7:0]}` |
+| Capture | 32 × 32 bits | `{cycle[15:0], uio_in[7:0], ui_in[7:0]}` |
 
 All ordinary instructions retire in **one enabled clock**. The only instructions
 that hold `PC` are `WAIT`, `WAIT_PIN0/1`, `WAIT_EDGE`, and `HALT`.
@@ -225,14 +225,23 @@ increments once per enabled clock. It is cleared by core reset and `TMR_CLR`.
 | 1 | `CAP_POP` | `cap_rd ← oldest entry`; advance read pointer |
 | 2 | `CAP_UI` | `A ← cap_rd[7:0]` (ui_in byte) |
 | 3 | `CAP_UIO` | `A ← cap_rd[15:8]` (uio_in byte) |
-| 4 | `CAP_TS` | `A ← cap_rd[23:16]` (cycle timestamp) |
+| 4 | `CAP_TS` | `A ← cap_rd[23:16]` (timestamp low byte) |
 | 5 | `CAP_STATUS` | `A ← {full, empty, count[5:0]}` |
 | 6 | `CAP_CLR` | clear FIFO, pointers, and `cap_rd` |
-| 7 | reserved | no effect |
+| 7 | `CAP_TSH` | `A ← cap_rd[31:24]` (timestamp high byte) |
 
 The capture engine samples `{uio_in, ui_in}` every enabled clock while
 `cap_en=1`. Whenever the 16-bit pin vector differs from the previous sample, it
-pushes `{timer[7:0], uio_in, ui_in}`. The buffer holds 32 entries. In the default
+pushes `{timer[15:0], uio_in, ui_in}`. The buffer holds 32 entries.
+
+The timestamp is the whole 16-bit cycle counter: `CAP_TS` returns the low byte
+and `CAP_TSH` the high byte, so a program reads one entry with `CAP_POP`,
+`CAP_TS`, `CAP_TSH`, `CAP_UIO`, `CAP_UI` and can subtract two timestamps to get a
+16-bit interval. Eight bits would alias every 256 clocks, which is shorter than
+one bit time at the rates this engine demonstrates (a 76.8 kbaud UART bit is 417
+clocks), so a low-byte-only timestamp could not time the traffic it had just
+recorded. Firmware that only reads `CAP_TS` sees exactly the low byte it saw
+before this field was widened. In the default
 FIFO mode (`imm[1]=0`) new events are dropped once it is full; in roll mode
 (`imm[1]=1`, written `CAP_EN 3`) the oldest entry is overwritten instead, so when
 the program stops the buffer holds the last 32 edges before the stop. `CAP_POP`
@@ -275,7 +284,7 @@ initial value.
 | 3 | `SER_BUSY` | `A ← 1` while data bits or a stuffed 0 remain; sets `Z`, `N` |
 | 4 | `SER_ONES` | `A ← consecutive ones since the last stuffed 0` |
 | 5 | `SER_SET imm` | line level ← `imm[0]`; clears the stuffing state |
-| 6 | reserved | no effect |
+| 6 | `SER_JK` | `A ← 0x01` when the line level is 1 (J), `0x02` when it is 0 (K) |
 | 7 | reserved | no effect |
 
 `SER_NEXT` implements the USB low-speed line code: a data bit of 0 is a
@@ -296,6 +305,13 @@ loop:  SER_BUSY
 With nothing left to send, `SER_NEXT` returns the current level without advancing,
 so a program that ignores `SER_BUSY` repeats a level instead of fabricating a bit
 that was never in the byte.
+
+`SER_JK` turns the single line level into the differential pair a USB cable
+actually carries: bit 0 is `D-`, bit 1 is `D+`, so level 1 is the J state (D-
+high) and level 0 is K (D+ high). Writing the result to `uio_out` with both pins
+enabled drives a real J or K, and writing `0x00` drives SE0, which is exactly what
+an end-of-packet and a bus reset look like. It drives no pad itself, like the
+other `SER` sub-ops, so the two pins stay firmware's choice.
 
 `SER_LD` deliberately **keeps** the running level and the ones count: loading the
 next byte of a packet continues the same NRZI stream and the same stuffing

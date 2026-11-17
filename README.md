@@ -74,10 +74,10 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Item | Result |
 |---|---|
 | RTL | 6 Verilog-2001 modules, one clock, every flop reset |
-| Cocotb tests | **26/26 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll, CRC-16/CRC-5, USB line code transmit and receive, a full USB data packet, opcode sweep, co-simulation) |
+| Cocotb tests | **27/27 pass** (reset, loader, ALU/memory, waits, timer, UART, SPI modes 0–3, I2C master/target 100/400 kHz, PS/2, JTAG master, capture + overflow + roll + 16-bit timestamp span, CRC-16/CRC-5, USB line code transmit and receive, a differential USB packet with SE0, opcode sweep, co-simulation) |
 | RTL vs ISS | all 120 opcode/subop encodings executed in lock-step, plus 1,000 randomized cycles; every architecturally visible register compared |
 | Assembler/ISS tests | **7/7 pass** |
-| Synthesis | **309,183 µm²** mapped IHP `typ_1p20V_25C` cells: 31% of the 8×4 allocation (41% of a 6×4 tile set, for comparison) |
+| Synthesis | **330,620 µm²** mapped IHP `typ_1p20V_25C` cells: 33% of the 8×4 allocation (44% of a 6×4 tile set, for comparison) |
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
@@ -107,7 +107,7 @@ chip. Rebuild with `make die` after
 ## One core, every protocol
 
 There is no UART block, no SPI block, no I2C block. The table below is the same
-core running twelve different images across ten protocol roles.
+core running fourteen different images across ten protocol roles.
 Every row is a cocotb test against the RTL through the real loader, not a
 hand-written waveform.
 
@@ -121,9 +121,9 @@ hand-written waveform.
 | I2C | target | 100 kHz and 400 kHz | open-drain ACK, edge waits on SCL | `test_i2c_target`, `test_i2c_target_400k` |
 | PS/2 | device | ~10.5 kHz (9 × `WAIT 167`) | open-drain clock and data, odd parity | `test_ps2_device` |
 | JTAG | master | TCK half period from `WAIT` | TAP walk to Shift-DR, 32-bit DR scan | `test_jtag_idcode` |
-| USB low speed | data packet | 21 clocks per bit, 1.52 Mbit/s demonstration rate | `SER_LD`/`SER_NEXT` line code, `CRC16_ADD`/`LO`/`HI` payload CRC | `test_usb_data_packet` |
+| USB low speed | data packet | 21/22-clock dither, 1.506 Mbit/s (inside ±1.5%) | `SER_LD`/`SER_NEXT` line code, `SER_JK` differential pair on D-/D+, SE0 end-of-packet, `CRC16_ADD`/`LO`/`HI` payload CRC | `test_usb_data_packet` |
 | USB low speed | packet receiver | 21 clocks per bit | `RX_RST`/`RX_BIT` undo NRZI and stuffing, violation latched | `test_nrzi_receive` |
-| Capture | analyzer | every pin change, 32 entries deep; FIFO or roll mode | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO` | `test_capture`, `test_capture_overflow`, `test_capture_roll` |
+| Capture | analyzer | every pin change, 32 entries deep with 16-bit timestamps; FIFO or roll mode | `CAP_EN`, drain through `CAP_UI`/`CAP_UIO`/`CAP_TS`/`CAP_TSH` | `test_capture`, `test_capture_overflow`, `test_capture_roll`, `test_capture_timestamp_span` |
 
 Both ends of UART, SPI and I2C are firmware. That is the flexibility claim made
 concrete: the hard part of either role is a program, not a hard macro. The price
@@ -232,7 +232,7 @@ python3 -m pytest -q tools/test_isa.py
 ./scripts/build_programs.sh
 python3 tools/proteus_iss.py build/programs/uart_tx.json --cycles 2000 --trace
 
-# 3. RTL simulation: 26 cocotb tests, about 90 s, no gate-level netlist needed.
+# 3. RTL simulation: 27 cocotb tests, about 90 s, no gate-level netlist needed.
 cd test && python3 -m pip install -r requirements.txt && make -B && cd ..
 
 # 4. Area against the IHP cells (PDK_ROOT must point at IHP-Open-PDK).

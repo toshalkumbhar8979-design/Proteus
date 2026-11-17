@@ -141,7 +141,14 @@ class ProteusISS:
         if self.cap_count == 0:
             return 0
         e = self.cap_mem[self.cap_rd_ptr]
-        return ((e.timestamp & MASK8) << 16) | ((e.pins >> 8) & MASK8) << 8 | (e.pins & MASK8)
+        # 16-bit timestamp in the high half, pins in the low half. An 8-bit
+        # timestamp aliases every 256 clocks, which is shorter than a UART bit
+        # time at the demonstrated rates.
+        return (
+            ((e.timestamp & 0xFFFF) << 16)
+            | ((e.pins >> 8) & MASK8) << 8
+            | (e.pins & MASK8)
+        )
 
     def _set_flags(self, result: int, carry: int | None = None) -> None:
         self.z = 1 if (result & MASK8) == 0 else 0
@@ -450,6 +457,8 @@ class ProteusISS:
                     self.a = status_before
                 elif sub == 6:
                     self.cap_rd = 0
+                elif sub == 7:
+                    self.a = (self.cap_rd >> 24) & MASK8
 
             elif op == OP_CRC:
                 if sub == 0:
@@ -519,6 +528,9 @@ class ProteusISS:
                     self.ser_level = imm & 1
                     self.ser_pend = 0
                     self.ser_ones = 0
+                elif sub == 6:
+                    # Differential pair: J (D- high) is 0x01, K is 0x02.
+                    self.a = 0x01 if self.ser_level else 0x02
 
             elif op == OP_RX:
                 if sub == 0:
@@ -596,7 +608,7 @@ class ProteusISS:
             drop = push_ok and full
             pop_ok = cap_pop and self.cap_count > 0
             if push_ok:
-                self.cap_mem[self.cap_wr] = CaptureEntry(old_timer & MASK8, pins)
+                self.cap_mem[self.cap_wr] = CaptureEntry(old_timer & 0xFFFF, pins)
                 self.cap_wr = (self.cap_wr + 1) % self.cap_depth
             if pop_ok or drop:
                 self.cap_rd_ptr = (self.cap_rd_ptr + 1) % self.cap_depth

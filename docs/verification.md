@@ -51,13 +51,14 @@ TOTAL SIM TIME=4,033,620 ns
 | `test_i2c_target` | Run `i2c_target.s` against a cocotb controller model | Address match, ACK, received byte `0x42`, open-drain bus behaviour |
 | `test_i2c_target_400k` | Same target, 80-clock SCL periods | Address/data ACKs and `0x42` at 400 kHz timing |
 | `test_capture` | Toggle pins with `CAP_EN=1`, drain with `CAP_POP` | Edge detection, timestamped entries, FIFO count/empty status, data ordering |
+| `test_capture_timestamp_span` | `capture_span.s` records two `ui[2]` edges 300 clocks apart and reports both 16-bit timestamps | The reported span is 300 ± 10 clocks, which eight bits could not hold: it proves the timestamp is the whole cycle counter and not its low byte |
 | `test_capture_overflow` | 34 pin changes into the 32-entry FIFO | Full flag set, count saturates at 32, extra events dropped |
 | `test_capture_roll` | 49 pin changes with `CAP_EN 3` | Roll mode keeps the newest 32 events: full flag set, count 32, and the oldest survivor carries the phase-2 pin state, so the early entries were overwritten rather than dropped |
 | `test_pin_wait` | `WAIT_PIN0/1` on `ui_in[0]` | Level-sensitive stall and release, no missed edge |
 | `test_crc_helpers` | Feed `123456789` through `CRC16_ADD`, then 11 token bits through `CRC5_BIT` | CRC-16/USB equals the published check value `0xB4C8`; CRC-5 equals a reference implementation in the test file |
 | `test_usb_line_code` | `SER_LD 0xFF`, then `SER_NEXT` with a bit strobe on `uo[7]` | The emitted level sequence is bit-for-bit the NRZI + stuffing sequence an independent reference produces, including the stuffed 0 after six ones |
 | `test_nrzi_receive` | A reference encoder drives the line; `RX_BIT` samples it over a handshake pin | Three bytes decode back exactly, the stuffed zero produces no data bit, and seven ones with no stuffed zero raise the sticky violation latch |
-| `test_usb_data_packet` | `usb_data_tx.s` sends SYNC, PID DATA0, two payload bytes and CRC-16/USB; one strobe per bit time is collected | The whole level stream equals an independent multi-byte NRZI + stuffing encoder, and the decoded bytes equal `{0x80, 0xC3, 0x11, 0x22}` followed by the CRC the reference computes, low byte first |
+| `test_usb_data_packet` | `usb_data_tx.s` sends SYNC, PID DATA0, two payload bytes and CRC-16/USB differentially on D-/D+; the pair and the bit strobe are sampled every clock | The decoded bytes equal `{0x80, 0xC3, 0x11, 0x22}` plus the CRC the reference computes; every bit time is 21 or 22 clocks with both lengths present (the dither), the packet average is inside ±1.5% of 1.5 Mbit/s, both lines are driven for every bit, SE0 appears after the CRC, and the bus returns to J |
 | `test_opcode_sweep` | Every opcode/subop pair, fixed preamble, 30-cycle window | All 120 encodings execute identically on RTL and ISS |
 | `test_random_cosim` | 48-instruction random program, 1,000 enabled clocks | Full architectural lock-step against the ISS after every clock |
 
@@ -82,11 +83,11 @@ Yosys with the IHP SG13CMOS5L `typ_1p20V_25C` liberty, `abc` mapping, and
 
 | Metric | Value |
 |---|---:|
-| Mapped cell area | 309,183 µm² |
+| Mapped cell area | 330,620 µm² |
 | Nominal 8×4 tile area | 1,001,920 µm² (32 × 202 × 155 µm) |
-| Fraction of nominal 8×4 area | 30.9% |
-| Fraction of a 6×4 tile set (751,440 µm²) | 41.0% |
-| Sequential cells | 182,826 µm² (59.1%) |
+| Fraction of nominal 8×4 area | 33.0% |
+| Fraction of a 6×4 tile set (751,440 µm²) | 44.0% |
+| Sequential cells | 195,759 µm² (59.2%) |
 | Program RAM | 162k µm² (63% of the design) |
 | Latches inferred | 0 |
 | Multiply/divide cells | 0 |
@@ -101,6 +102,11 @@ instructions, so the warning is intentional rather than suppressed.
 
 ## 4. Hardened build
 
+> **These numbers predate the capture-timestamp and differential-USB change.**
+> They describe commit `18f08e0`, which is the RTL that was hardened; the current
+> `main` adds 256 capture flops and the `SER_JK` helper, so it needs its own run
+> before any of the figures below are quoted as current again.
+>
 > The numbers in this section come from the **8×4** hardening of commit `18f08e0`,
 > which is the design that includes the 32-entry capture buffer, the CRC
 > registers, the line coder and the NRZI receiver. Run:

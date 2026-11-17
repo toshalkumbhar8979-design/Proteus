@@ -19,3 +19,4 @@ __pycache__/
 # Working notes for whoever is building this: kept in the checkout, not published.
 AGENTS.md
 .freebuff/
+docs/datasheet.log

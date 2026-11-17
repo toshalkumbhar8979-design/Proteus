@@ -138,7 +138,7 @@ timing means the part runs down to DC. On an ECP5-25F FPGA the same RTL closes a
 | Program memory | 128 × 16 bit | word address `0x00`–`0x7F`; loaded by host, PC is 7 bits |
 | Data memory | 64 × 8 bit | byte address `0x00`–`0x3F`; `(X)`, `(imm[5:0])` |
 | Return stack | 8 × 8 bit | managed by `CALL` / `RET`; circular, overflow wraps |
-| Capture buffer | 32 × 24 bit | `{cycle[7:0], uio_in, ui_in}`; `CAP_POP` then `CAP_UI/UIO/TS` |
+| Capture buffer | 32 × 32 bit | `{cycle[15:0], uio_in, ui_in}`; `CAP_POP` then `CAP_UI/UIO/TS/TSH` |
 | Cycle counter | 16 bit | `TMR_LO` latches high byte, `TMR_HI` reads it |
 | CRC-16 / CRC-5 | 16 / 5 bit | `CRC16_*`, `CRC5_*`; reset to `0xFFFF` / `0x1F` |
 | Identity | 8 bit | `ID` returns `0xA1` |
@@ -166,9 +166,9 @@ Sixteen bits per instruction: `opcode[15:11]`, `subop[10:8]`, `imm[7:0]`.
 | 8 | `ALUX` | the ALU table with `X` as the operand |
 | 9 | `ALUY` | the ALU table with `Y` as the operand |
 | 10 | `TIMER` | `TMR_LO`, `TMR_HI`, `TMR_CLR`, `ID` |
-| 11 | `CAP` | `CAP_EN` (FIFO/roll), `CAP_POP`, `CAP_UI`, `CAP_UIO`, `CAP_TS`, `CAP_STATUS`, `CAP_CLR` |
+| 11 | `CAP` | `CAP_EN` (FIFO/roll), `CAP_POP`, `CAP_UI`, `CAP_UIO`, `CAP_TS`, `CAP_TSH`, `CAP_STATUS`, `CAP_CLR` |
 | 12 | `CRC` | `CRC16_RST`, `CRC16_ADD`, `CRC16_LO/HI`, `CRC5_RST`, `CRC5_BIT`, `CRC5` |
-| 13 | `SER` | `SER_LD`, `SER_NEXT`, `SER_LEVEL`, `SER_BUSY`, `SER_ONES`, `SER_SET` |
+| 13 | `SER` | `SER_LD`, `SER_NEXT`, `SER_LEVEL`, `SER_BUSY`, `SER_ONES`, `SER_SET`, `SER_JK` |
 | 14 | `RX` | `RX_RST`, `RX_BIT`, `RX_ONES`, `RX_ERR` |
 | 15–31 | reserved | execute as `NOP`; the assembler rejects them |
 
@@ -211,7 +211,7 @@ Rates are for the 32 MHz clock and are set by firmware, not by fixed dividers.
 | I2C target | `i2c_target.s` | address `0x28`, both rates | 7-bit addressing |
 | PS/2 device | `ps2_device.s` | ~10.5 kHz, 11-bit frame | **transmit only** |
 | JTAG master | `jtag_idcode.s` | firmware-paced | reads IDCODE; **no IR scan** |
-| USB low-speed framing | `usb_data_tx.s` | 21 clocks/bit ≈ 1.524 Mbit/s | **1.6% above** the 1.5 Mbit/s nominal; no SE0 |
+| USB low-speed framing | `usb_data_tx.s` | 21/22-clock dither, 1.506 Mbit/s | differential J/K on D-/D+, SE0 end-of-packet; rate inside ±1.5% |
 | Logic analyser | `capture_demo.s` | every clock | 32 entries, FIFO or roll |
 
 ## 10. Errata and limitations
@@ -227,8 +227,11 @@ Rates are for the 32 MHz clock and are set by firmware, not by fixed dividers.
 4. **PS/2 is transmit-only.** A keyboard/host receiver is not implemented.
 5. **JTAG is a master that reads IDCODE without an IR scan**, valid because
    IEEE 1149.1 puts IDCODE in the instruction register out of reset.
-6. **USB is line-code and packet structure**, not a compliant PHY: the bit period
-   is 1.6% fast and end-of-packet SE0 cannot be expressed on one line pin.
+6. **USB is a framing demonstration, not a PHY.** The bit rate is dithered inside
+   ±1.5% and SE0 is driven, but there is no transceiver, no 1.5 k pull-up on the
+   board, and the eight bit slots in `usb_data_tx.s` assume this packet needs no
+   stuffed bit. A packet that does need one still transmits correctly through the
+   `SER` helper; it just shifts the slots, so that case wants a timer-paced loop.
 7. **Program memory is volatile and undefined at power-up**; the host must load
    an image before `run = 1`.
 8. **Opcodes 15–31 are reserved** and execute as `NOP`. Firmware must not use

@@ -4,9 +4,20 @@
 //
 // Samples the 16 external pin bits every enabled clock while cap_en=1. When the
 // sampled vector differs from the previous sample it stores
-// {timestamp[7:0], uio_in[7:0], ui_in[7:0]}. The oldest entry is exposed
+// {timestamp[15:0], uio_in[7:0], ui_in[7:0]}. The oldest entry is exposed
 // combinationally as head_data, so a CAP_POP instruction can both read the head
 // and advance the read pointer on the same clock edge.
+//
+// The timestamp is the whole 16-bit cycle counter, not its low byte. An 8-bit
+// timestamp aliases every 256 clocks, which is shorter than one bit time of the
+// slow protocols this engine exists to demonstrate: a 76.8 kbaud UART bit is 417
+// clocks and a 100 kHz I2C half-period is 160, so a low-byte-only scope could
+// not time the traffic it had just captured. The cost is 32 entries x 8 extra
+// bits, 256 flops, which the 8x4 allocation has.
+//
+// CAP_TS still returns the low byte at head_data[23:16] and CAP_TSH returns the
+// high byte at [31:24], so firmware that only read the low byte keeps exactly
+// the meaning it had before.
 //
 // Two modes, chosen by CAP_EN imm[1]:
 //
@@ -32,20 +43,20 @@ module proteus_capture #(
     input  wire              rst_n,
     input  wire              en,          // run && !cfg_busy
     input  wire [15:0]       pins,        // {uio_in, ui_in}
-    input  wire [7:0]        timestamp,
+    input  wire [15:0]       timestamp,
     input  wire              set_en,      // CAP_EN instruction
     input  wire              en_val,      // imm[0]
     input  wire              roll_val,    // imm[1]
     input  wire              pop,         // CAP_POP instruction
     input  wire              clear,       // CAP_CLR instruction
-    output wire [23:0]       head_data,
+    output wire [31:0]       head_data,
     output wire [7:0]        status
 );
 
   localparam integer DEPTH = (1 << CAP_AW);
   localparam [CAP_AW:0] DEPTH_COUNT = (1 << CAP_AW);
 
-  reg [23:0] mem [0:DEPTH-1];
+  reg [31:0] mem [0:DEPTH-1];
   reg [CAP_AW-1:0] wr_ptr;
   reg [CAP_AW-1:0] rd_ptr;
   reg [CAP_AW:0]   count;       // 0..DEPTH
@@ -70,7 +81,7 @@ module proteus_capture #(
 
   wire [5:0] count6 = count;
 
-  assign head_data = empty ? 24'b0 : mem[rd_ptr];
+  assign head_data = empty ? 32'b0 : mem[rd_ptr];
   assign status    = {full, empty, count6};
 
   integer i;
@@ -83,7 +94,7 @@ module proteus_capture #(
       cap_en   <= 1'b0;
       cap_mode <= 1'b0;
       for (i = 0; i < DEPTH; i = i + 1) begin
-        mem[i] <= 24'b0;
+        mem[i] <= 32'b0;
       end
     end else begin
       // Capture enable and mode register.

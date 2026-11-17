@@ -13,8 +13,10 @@ python3 -m pip install -r requirements.txt
 make -B
 ```
 
-Expected result: `TESTS=26 PASS=26 FAIL=0 SKIP=0`. Under `GATES=yes` the three
-white-box tests are skipped: `TESTS=26 PASS=23 FAIL=0 SKIP=3`.
+Expected result: `TESTS=27 PASS=27 FAIL=0 SKIP=0`. Under `GATES=yes` the three
+white-box tests are skipped; the gate-level counts quoted elsewhere come from the
+last hardened netlist (`TESTS=26 PASS=23 FAIL=0 SKIP=3`), which predates the
+16-bit capture timestamp and the differential USB image.
 
 ## What is covered
 

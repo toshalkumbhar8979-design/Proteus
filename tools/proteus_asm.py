@@ -379,6 +379,7 @@ def encode_instruction(op: str, args: list[str], symbols: dict[str, int], lineno
         "CAP_TS": 4,
         "CAP_STATUS": 5,
         "CAP_CLR": 6,
+        "CAP_TSH": 7,
     }
     if m in cap_subs:
         if m == "CAP_EN":
@@ -412,6 +413,7 @@ def encode_instruction(op: str, args: list[str], symbols: dict[str, int], lineno
         "SER_LEVEL": 2,
         "SER_BUSY": 3,
         "SER_ONES": 4,
+        "SER_JK": 6,
     }
     if m in ser_subs:
         want(0)

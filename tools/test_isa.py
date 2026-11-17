@@ -43,10 +43,11 @@ def test_protocol_helper_mnemonics():
         SER_ONES
         SER_SET 1
         SER_SET 0
+        SER_JK
     """
     image = assemble(src)
     words = [image.program[a] for a in sorted(image.program)]
-    assert len(words) == 15
+    assert len(words) == 16
     texts = [isa.disassemble(w).text for w in words]
     assert texts[0] == "CRC16_RST"
     assert texts[5] == "CRC5_BIT 1"
@@ -140,6 +141,7 @@ next:
         CAP_UI
         CAP_UIO
         CAP_TS
+        CAP_TSH
         CAP_STATUS
         CAP_CLR
         HALT

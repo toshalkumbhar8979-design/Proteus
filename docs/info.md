@@ -85,7 +85,7 @@ actual pad, and protocol firmware owns debouncing and majority sampling.
    `ui_in[4]` = TDO to a target's TAP, then load `programs/jtag_idcode.s`.
    `uo_out` becomes `0xC3` when the target returns IDCODE `0x1A5A5A5D`, and
    `0xE7` otherwise.
-7. Rebuild and rerun the simulation with `cd test && make -B`; all 26 tests
+7. Rebuild and rerun the simulation with `cd test && make -B`; all 27 tests
    should pass.
 
 On power-up the program memory is undefined, so the chip does nothing until the

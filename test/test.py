@@ -769,19 +769,29 @@ no_bit:
 
 @cocotb.test()
 async def test_usb_data_packet(dut):
-    """A firmware data packet decodes to SYNC, PID, payload and a valid CRC-16."""
+    """A dithered differential packet decodes, holds the LS rate, and ends in SE0."""
     await reset_dut(dut)
     image = load_source("usb_data_tx.s")
     await load_image(dut, image)
 
-    # One level per bit strobe, exactly as test_usb_line_code collects them.
+    # One line state per bit strobe. uio[0] is D- and uio[1] is D+, so J (D- high)
+    # is the encoded level 1 and K (D+ high) is level 0. Sampling the pair instead
+    # of one pin is what makes SE0 (both low) observable at all.
     levels: list[int] = []
+    strobe_cycles: list[int] = []
+    se0_seen = False
     prev = 0
-    for _ in range(4000):
+    for cycle in range(9000):
         await RisingEdge(dut.clk)
         uo = int(dut.uo_out.value)
+        pair = int(dut.uio_out.value) & 0x03
         if uo == 0x01 and prev != 0x01:
-            levels.append(int(dut.uio_out.value) & 0x01)
+            assert int(dut.uio_oe.value) & 0x03 == 0x03, "a bit time left a line undriven"
+            assert pair in (0b01, 0b10), f"state {pair:02b} is neither J nor K"
+            levels.append(1 if pair == 0b01 else 0)
+            strobe_cycles.append(cycle)
+        elif levels and uo == 0x00 and pair == 0b00:
+            se0_seen = True
         prev = uo
         if uo == 0xAA:
             break
@@ -797,6 +807,45 @@ async def test_usb_data_packet(dut):
     assert len(bits) % 8 == 0, f"{len(bits)} bits is not a whole number of bytes"
     got = [sum(bits[i * 8 + k] << k for k in range(8)) for i in range(len(bits) // 8)]
     assert got == expected_bytes, f"packet {[hex(x) for x in got]} != {[hex(x) for x in expected_bytes]}"
+
+    # Dither and byte-boundary absorption together decide the wire rate. Every bit
+    # time has to be 21 or 22 clocks, both must occur, and the packet average has to
+    # sit inside the +-1.5% low-speed tolerance. A fixed 21 clocks is 1.524 Mbit/s.
+    gaps = [b - a for a, b in zip(strobe_cycles, strobe_cycles[1:])]
+    assert set(gaps) <= {21, 22}, f"bit times {sorted(set(gaps))} are not 21/22"
+    assert 21 in gaps and 22 in gaps, f"no dither: {sorted(set(gaps))}"
+    mean_clocks = sum(gaps) / len(gaps)
+    bit_rate = 32_000_000 / mean_clocks
+    assert abs(mean_clocks - 21.3333) / 21.3333 < 0.01, f"mean bit time {mean_clocks:.3f} clocks"
+    assert abs(bit_rate - 1_500_000) / 1_500_000 < 0.015, f"bit rate {bit_rate:.0f} outside 1.5%"
+
+    # End of packet: SE0 after the CRC, then the bus returns to J.
+    assert se0_seen, "no SE0 was driven after the last bit"
+    assert int(dut.uio_out.value) & 0x03 == 0b01, "the bus did not return to J"
+
+
+@cocotb.test()
+async def test_capture_timestamp_span(dut):
+    """A gap longer than 256 clocks keeps its true length in the timestamp."""
+    await reset_dut(dut)
+    image = load_source("capture_span.s")
+    await load_image(dut, image)
+
+    await ClockCycles(dut.clk, 5)
+    dut.ui_in.value = ui_word(1, 0, 0, low=0x00)
+    await ClockCycles(dut.clk, 20)
+    dut.ui_in.value = ui_word(1, 0, 0, low=0x04)   # first edge
+    await ClockCycles(dut.clk, 300)
+    dut.ui_in.value = ui_word(1, 0, 0, low=0x00)   # second edge, 300 clocks later
+
+    seen = await collect_uo_changes(dut, 0xAA, limit=8000)
+    assert len(seen) == 5, f"capture span outputs {[hex(x) for x in seen]}"
+    ts1 = seen[0] | (seen[1] << 8)
+    ts2 = seen[2] | (seen[3] << 8)
+    span = (ts2 - ts1) & 0xFFFF
+    assert span > 256, f"span {span} fits in eight bits, so the test proves nothing"
+    assert 290 <= span <= 310, f"timestamp span {span}, expected about 300"
+    assert seen[4] == 0xAA
 
 
 @cocotb.test()
@@ -1134,15 +1183,20 @@ async def test_opcode_sweep(dut):
     for op in range(14):
         for sub in range(8):
             image = Image()
+            # Prime data[5] instead of reading whatever power-up left there. Data
+            # memory has no reset (it is a written-before-read resource), so a
+            # preceding test that touched address 5 would otherwise decide this
+            # encoding's expected value, and the ISS has no such history.
             image.program = {
                 0: nop,
                 1: isa.encode(isa.OP_LOAD, 0, 0xA5),
                 2: isa.encode(isa.OP_LOAD, 1, 0x3C),
                 3: isa.encode(isa.OP_LOAD, 2, 0x81),
-                4: isa.encode(op, sub, 0x05),
-                5: isa.encode(isa.OP_TIME, 7, 0),  # HALT
+                4: isa.encode(isa.OP_LOAD, 6, 0x05),   # ST (5),A
+                5: isa.encode(op, sub, 0x05),
+                6: isa.encode(isa.OP_TIME, 7, 0),  # HALT
             }
-            image.max_program = 6
+            image.max_program = 7
             image.max_data = 0
 
             await reset_dut(dut)

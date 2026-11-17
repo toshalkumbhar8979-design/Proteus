@@ -34,7 +34,7 @@ therefore be written as a timing diagram.
                        │  ALU, shifts, pin ops, branches       │──► uio_oe[7:0]
                        │  16-bit cycle timer                   │──► uio_od[7:0]
                        │  CRC-16, CRC-5, NRZI line coder       │
-                       │  32 x 24 capture FIFO                 │
+                       │  32 x 32 capture FIFO                 │
                        └───────────────────────────────────────┘
 ```
 
@@ -261,7 +261,7 @@ hardened timing run and a fresh protocol-rate check.
   split into separate images or written with macros.
 - The loader is write-only except for program readback; there is no data-memory
   readback command. Firmware can report data on pins.
-- The capture FIFO is 32 entries with 8-bit timestamps; it is for bursts, not
+- The capture FIFO is 32 entries with 16-bit timestamps; it is for bursts, not
   long traces.
 - No interrupts. A blocking `WAIT_PIN` stalls the CPU; concurrent protocols
   require interleaving by hand.

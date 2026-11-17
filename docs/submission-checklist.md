@@ -12,7 +12,7 @@ the status column only with evidence; do not tick an item because it is planned.
 | Architecture documentation | `docs/architecture.md` | **done** |
 | Instruction-set documentation | `docs/isa.md` | **done** |
 | Assembler or toolchain | `tools/proteus_asm.py`, `tools/proteus_isa.py` | **done** |
-| Example programs | `programs/*.s` (13 images) | **done** |
+| Example programs | `programs/*.s` (14 images) | **done** |
 | Verification write-up | `docs/verification.md` | **done** |
 | UART demonstrated | `programs/uart_tx.s`, `uart_rx.s`; tests | **done (RTL)** |
 | SPI demonstrated | `programs/spi_master.s`, `spi_master_cpol1.s`, `spi_target.s`; tests | **done (RTL, master modes 0–3, target mode 0)** |
@@ -23,11 +23,11 @@ the status column only with evidence; do not tick an item because it is planned.
 | GDS build | `.github/workflows/gds.yaml` | **passes** (run 43957356626, commit `18f08e0`, 8×4); 0 DRC, 0 LVS, antenna clean, `gds`/`precheck`/`gl_test`/`viewer` all green |
 | Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **passes** |
 | Post-route timing | GDS action report | **32 MHz passes**: slow-corner setup +8.90 ns, 0 violating paths, hold positive |
-| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **23/23 pin-level pass** on the 8×4 post-place-and-route netlist, including the receiver; the 3 white-box co-simulation tests are skipped by design |
+| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **23/23 pin-level pass** on the last hardened 8×4 netlist; the 3 white-box co-simulation tests are skipped by design. That netlist predates the 16-bit capture timestamp and the differential USB image, so a new run is the authority for those |
 | Formal verification | `scripts/formal.sh`, `formal` CI job | **6 invariants proved** (BMC + induction), including the return stack |
 | FPGA check without hardware | `scripts/synth_fpga.sh` | **ECP5 map + PnR**: 1,611 LUT4, 544 FF, 65.9 MHz vs 32 MHz target |
 | AI-use disclosure | `docs/competition.md` | **done** |
-| Stretch protocols (USB, 10BASE-T) | not attempted | **honest gap** |
+| Stretch protocols (USB, 10BASE-T) | `usb_data_tx.s`, `docs/isa.md` §3.14 | **USB low-speed framing done**: NRZI + stuffing, differential J/K, SE0, CRC-16, dithered to 1.506 Mbit/s; 10BASE-T not attempted |
 | FPGA board run | no hardware available | **honest gap** (mapping, PnR, and timing verified instead) |
 | Optional demo video | not recorded | **optional** |
 | Competition submission form | Jane Street, closer to 2027-01-18 | **external** |
