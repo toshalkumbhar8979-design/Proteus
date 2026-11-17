@@ -1,6 +1,6 @@
 # Proteus-1 top-level build.
 #
-#   make test       RTL cocotb suite (21 tests)
+#   make test       RTL cocotb suite (26 tests)
 #   make tools      assembler/disassembler/ISS unit tests (7 tests)
 #   make programs   assemble every example into build/programs
 #   make synth      Yosys area estimate against IHP CMOS5L
@@ -8,6 +8,7 @@
 #   make fpga       ECP5 synthesis + place-and-route portability check
 #   make figures    render docs/figures/*.tex to the README images (tectonic + pymupdf)
 #   make die        render the submitted GDS to docs/images/die.png (needs klayout)
+#   make datasheet  build docs/datasheet.pdf from docs/datasheet.tex (tectonic)
 #   make lint       Verilator -Wall (one intentional N-flag warning)
 #   make clean
 
@@ -18,7 +19,7 @@ PDK_ROOT ?= $(HOME)/pdk/IHP-Open-PDK
 SOURCES = src/tt_um_proteus.v src/proteus_core.v src/proteus_loader.v \
           src/proteus_prog_ram.v src/proteus_data_ram.v src/proteus_capture.v
 
-.PHONY: test tools programs synth formal fpga figures die lint clean
+.PHONY: test tools programs synth formal fpga figures die datasheet lint clean
 
 test:
 	$(MAKE) -C test -B
@@ -56,6 +57,11 @@ die:
 	  im = im.resize((1800, round(1800*im.size[1]/im.size[0])), Image.LANCZOS); \
 	  im.quantize(colors=40, dither=Image.NONE).save('docs/images/die.png', optimize=True, dpi=(300,300))" \
 	  || echo "note: install pillow to refresh docs/images/die.png"
+
+# The PDF is committed so a judge can read the datasheet without a TeX install;
+# this target regenerates it from the LaTeX source that produces it.
+datasheet:
+	tectonic -X compile docs/datasheet.tex --outdir docs
 
 lint:
 	verilator --lint-only -Wall -Wno-fatal --top-module tt_um_proteus \

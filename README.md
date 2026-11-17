@@ -272,7 +272,7 @@ scripts/   synthesis, area, formal and figure/animation helpers
 
 - [Architecture](docs/architecture.md) — blocks, cycle accounting, pin model, area trade-offs
 - [ISA reference](docs/isa.md) — every encoding, flag, and cycle count
-- [Datasheet](docs/datasheet.md) — pinout, power and timing limits, ISA summary, protocol matrix, errata
+- [Datasheet](docs/datasheet.md) — pinout, power and timing limits, ISA summary, protocol matrix, errata · **[PDF](docs/datasheet.pdf)** ([LaTeX source](docs/datasheet.tex))
 - [Bring-up note](docs/info.md) — hooking each protocol up to real hardware
 - [Verification report](docs/verification.md) — what each test proves, and what it does not
 - [Competition write-up](docs/competition.md) — design rationale, novelty, AI-use disclosure
