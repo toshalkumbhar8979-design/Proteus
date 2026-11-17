@@ -263,7 +263,7 @@ src/       synthesizable Verilog and the Tiny Tapeout top module
 tools/     assembler, disassembler, ISS, toolchain tests
 programs/  assembly sources for UART, SPI, I2C, USB packets, capture, self-test
 test/      cocotb testbench and protocol tests
-docs/      architecture, ISA, datasheet, verification report, competition write-up
+docs/      architecture, ISA, datasheet, bring-up note, verification report, competition write-up
 host/      MicroPython loader for RP2350 / any SPI host
 scripts/   synthesis, area, formal and figure/animation helpers
 ```
@@ -272,7 +272,8 @@ scripts/   synthesis, area, formal and figure/animation helpers
 
 - [Architecture](docs/architecture.md) — blocks, cycle accounting, pin model, area trade-offs
 - [ISA reference](docs/isa.md) — every encoding, flag, and cycle count
-- [Datasheet](docs/info.md) — pinout, loader frames, bring-up steps
+- [Datasheet](docs/datasheet.md) — pinout, power and timing limits, ISA summary, protocol matrix, errata
+- [Bring-up note](docs/info.md) — hooking each protocol up to real hardware
 - [Verification report](docs/verification.md) — what each test proves, and what it does not
 - [Competition write-up](docs/competition.md) — design rationale, novelty, AI-use disclosure
 - [Submission checklist](docs/submission-checklist.md) — every competition requirement and its evidence
