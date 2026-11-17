@@ -20,10 +20,10 @@ the status column only with evidence; do not tick an item because it is planned.
 | Both controller and target roles | UART, SPI, I2C firmware and tests | **done** |
 | Other protocol beyond the headline three | PS/2 device transmitter and a JTAG master, each with a test | **done** |
 | Host loader documented | `docs/info.md`, `host/proteus_host.py` | **done** |
-| GDS build | `.github/workflows/gds.yaml` | **passes** (run 40903018243, commit `abbebf2`); 0 DRC, 0 LVS, antenna clean |
+| GDS build | `.github/workflows/gds.yaml` | **passes** (run 43957356626, commit `18f08e0`, 8×4); 0 DRC, 0 LVS, antenna clean, `gds`/`precheck`/`gl_test`/`viewer` all green |
 | Tiny Tapeout precheck | `precheck` job in `gds.yaml` | **passes** |
-| Post-route timing | GDS action report | **32 MHz passes**: slow-corner setup +6.10 ns, 0 violating paths, hold positive |
-| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **18/18 pass** on the last hardened netlist (synthesis and post-PnR); 3 white-box tests skipped by design. That netlist predates the 32-entry capture, the CRC registers and the line coder, so today's suite has 22 pin-level tests and the pending 8×4 run is the one that covers them |
+| Post-route timing | GDS action report | **32 MHz passes**: slow-corner setup +8.90 ns, 0 violating paths, hold positive |
+| Gate-level smoke test | `test/Makefile GATES=yes`, `gl_test` job | **23/23 pin-level pass** on the 8×4 post-place-and-route netlist, including the receiver; the 3 white-box co-simulation tests are skipped by design |
 | Formal verification | `scripts/formal.sh`, `formal` CI job | **6 invariants proved** (BMC + induction), including the return stack |
 | FPGA check without hardware | `scripts/synth_fpga.sh` | **ECP5 map + PnR**: 1,611 LUT4, 544 FF, 65.9 MHz vs 32 MHz target |
 | AI-use disclosure | `docs/competition.md` | **done** |
@@ -70,11 +70,11 @@ to a human judge.
 ## Claims to keep honest
 
 - The local 309,183 µm² number is a synthesis estimate for the current design;
-  the hardened numbers are 383,307 µm² of placed cells in a 902,417 µm² core,
-  from the last completed 6×4 run.
+  the hardened numbers are 469,393 µm² of placed cells in a 1,208,170 µm² core,
+  from the signed-off 8×4 run.
 - The SPI target is mode 0 only.
 - The 48 MHz build failed slow-corner setup. The declared clock is 32 MHz, and
-  that build passed post-route timing with +6.10 ns of slow-corner slack.
+  that build passed post-route timing with +8.90 ns of slow-corner slack.
 - No silicon exists. Timing, power, DRC, and LVS are signoff-tool results on the
   hardened netlist, and every protocol result is simulation.
 - Formal coverage is six invariants, not ISA equivalence or liveness.

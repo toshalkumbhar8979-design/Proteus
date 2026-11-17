@@ -69,7 +69,7 @@ I2C target, a PS/2 device, a JTAG/SWD bit-banger, or a small logic analyzer.
 ## Verified today
 
 Every claim below is reproducible from this repository. The hardened numbers
-come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/40903018243).
+come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/43957356626).
 
 | Item | Result |
 |---|---|
@@ -81,8 +81,9 @@ come from the passing [GDS run](https://github.com/toshalkumbhar8979-design/Prot
 | Latches / multiply / divide | none (`check -assert` passes) |
 | Lint | Verilator `-Wall`: one intentional warning (`N` flag has no branch in ISA v1) |
 | GDS / precheck | **hardened and clean**: 0 DRC errors, 0 LVS errors, precheck and gate-level test pass |
-| Post-route timing | **32 MHz passes all three corners**: slow-corner setup slack **+6.10 ns**, 0 violating paths, hold positive everywhere |
-| Hardened area | 1,289 × 711 µm die, 383,307 µm² of placed cells, 7.35 mW typical — from the last completed **6×4** run; the 8×4 build is in flight and replaces these when it signs off |
+| Post-route timing | **32 MHz passes all three corners**: slow-corner setup slack **+8.90 ns**, 0 violating paths, hold positive everywhere |
+| Hardened area | **1,724 × 711 µm** 8×4 die, 469,393 µm² of placed cells (38.9% of a 1,208,170 µm² core), 8.71 mW typical at 32 MHz |
+| Gate-level | **23/23 pin-level tests pass** on the post-place-and-route netlist; the three white-box co-simulation tests are skipped by design |
 | Formal | **6 invariants proved** with yosys SAT, bounded and by induction (PC freeze, timer monotonicity, FIFO bound, loader frame isolation, idle outputs, CALL/RET return stack) |
 | FPGA portability | ECP5 25k: 1,611 LUT4 (6%), 544 FF (2%), **65.9 MHz** against the 32 MHz target — mapped and routed, no board needed |
 
@@ -93,10 +94,10 @@ rows under Metal1 to Metal4, with the Metal4 power straps running the full
 height of the die](docs/images/die.png)
 
 *Rendered by KLayout 0.30 from `tt_um_proteus.gds` in the `tt_submission`
-artifact of the last completed 6×4 run, 1800 px across the 1.29 × 0.71 mm 6×4
+artifact of the signed-off 8×4 run (commit `18f08e0`), 1800 px across the 1.72 × 0.71 mm 8×4
 allocation. The dense field is standard-cell logic under Metal1–Metal3, the
 dark vertical bars are the Metal4 power straps, and the pale margins are fill
-cells. The submitted GDS carries the design only — 58 cells, no pad instances —
+cells: 469,393 µm² of logic in a 1,208,170 µm² core, 38.9% full, which is why the right-hand end of the core is empty rather than cropped. The submitted GDS carries the design only — 28,191 standard cells plus fill, no pad instances —
 so this is the design area, not the assembled chip. Rebuild with `make die`
 after `gh run download -n tt_submission -D build/sub`.*
 
@@ -282,7 +283,7 @@ The program memory is 128 words, not 256: synthesis showed the larger memory at
 There is no SRAM macro, no interrupt controller, and no data-memory readback
 command. The first hardened run passed DRC, LVS, and antenna checks but missed
 post-route setup at 48 MHz; the design was retimed to 32 MHz and the rerun
-**passed**, with +6.10 ns of slow-corner setup slack and zero violating paths.
+**passed**, with +8.90 ns of slow-corner setup slack and zero violating paths.
 Both the GDS and gate-level jobs are green in CI. See
 [`docs/verification.md`](docs/verification.md) for the exact numbers and the
 honest list of unproven items, and the

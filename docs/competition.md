@@ -122,17 +122,18 @@ trade-off is documented rather than hidden. That mapped figure includes the
 32-entry capture buffer, the CRC registers and the line coder, so it is the
 current design and not the earlier 128-word baseline.
 
-The hardened figures below are the last completed **6×4** run and are kept as
-the baseline until the 8×4 build signs off; they do not yet include the capture
-depth change or the two helper opcodes.
+The hardened figures below are from the signed-off **8×4** build of the current
+RTL, so they include the 32-entry capture buffer, the CRC registers, the line
+coder and the receiver.
 
 The design is hardened, not just synthesized. The Tiny Tapeout GDS action
-([run 40903018243](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/40903018243))
-produced a clean 6×4 SG13CMOS5L layout: 383,307 µm² of placed cells in a
-902,417 µm² core, 0 DRC errors, 0 LVS errors, and a passing precheck. Because
-the first run missed setup at 48 MHz, the clock was re-declared at 32 MHz; that
-build closes timing at every corner with **+6.10 ns** of slow-corner setup
-slack and 0 violating paths, and burns 7.35 mW typical. The same 17 pin-level
+([run 43957356626](https://github.com/toshalkumbhar8979-design/Proteus/actions/runs/43957356626))
+produced a clean 8×4 SG13CMOS5L layout: 469,393 µm² of placed cells (38.9%) in a
+1,208,170 µm² core, 0 DRC errors, 0 LVS errors, 0 antenna violations, and a
+passing precheck. Because the first run missed setup at 48 MHz, the clock was
+re-declared at 32 MHz; this build closes timing at every corner with
+**+8.90 ns** of slow-corner setup slack and 0 violating paths, and burns 8.71 mW
+typical. The same 23 pin-level
 tests that run on the RTL also pass on the hardened netlist.
 
 The honest gaps are in [`verification.md`](verification.md): no silicon, SPI

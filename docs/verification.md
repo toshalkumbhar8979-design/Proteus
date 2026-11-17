@@ -101,34 +101,42 @@ instructions, so the warning is intentional rather than suppressed.
 
 ## 4. Hardened build
 
-> The numbers in this section come from the last completed **6×4** hardening.
-> The design now declares the competition's **8×4** allocation (D-023); the 8×4
-> run replaces these figures when it finishes. The RTL is unchanged by the
-> switch: same six modules, same clock, same mapped cell count.
+> The numbers in this section come from the **8×4** hardening of commit `18f08e0`,
+> which is the design that includes the 32-entry capture buffer, the CRC
+> registers, the line coder and the NRZI receiver. Run:
+> `actions/runs/43957356626`. `gds`, `precheck`, `gl_test` and `viewer` all passed.
 
-The Tiny Tapeout GDS action hardened the design on commit `abbebf2` and produced
-a GDS, LEF, SPEF, and OASIS for the 6×4 SG13CMOS5L allocation. Run:
-`actions/runs/40903018243`. This is the authority for the numbers below; the
-local synthesis figure is only an estimate of them.
+The Tiny Tapeout GDS action produced a GDS, LEF, SPEF, and OASIS for the 8×4
+SG13CMOS5L allocation. This is the authority for the numbers below; the local
+synthesis figure is only an estimate of them.
 
 | Metric | Value |
 |---|---:|
-| Die bounding box | 1,289.28 × 710.64 µm (916,214 µm²) |
-| Core area | 902,417 µm² |
-| Placed standard-cell area | 383,307 µm² |
-| Setup slack, slow `1p08V/125C` | **+6.103 ns** (0 violating paths) |
-| Setup slack, typical `1p20V/25C` | +15.318 ns (0 violating paths) |
-| Setup slack, fast `1p32V/-40C` | +20.144 ns (0 violating paths) |
-| Hold slack, slow / typical / fast | +0.685 / +0.331 / +0.124 ns |
-| Total power, typical | 7.35 mW (6.13 internal, 1.18 switching, 0.04 leakage) |
+| Die bounding box | 1,724.16 × 710.64 µm (1,225,260 µm²) |
+| Core area | 1,208,170 µm² |
+| Placed standard-cell area | 469,393 µm² (38.9% core utilisation) |
+| Setup slack, slow `1p08V/125C` | **+8.895 ns** (0 violating paths) |
+| Setup slack, typical `1p20V/25C` | +14.595 ns (0 violating paths) |
+| Setup slack, fast `1p32V/-40C` | +18.071 ns (0 violating paths) |
+| Hold slack, slow / typical / fast | +0.654 / +0.313 / +0.108 ns |
+| Total power, typical | 8.71 mW (7.27 internal, 1.38 switching, 0.05 leakage) |
 | DRC errors | 0 |
 | LVS errors | 0 |
+| Antenna, power-grid violations | 0 / 0 |
+| Gate-level tests | 23/23 pin-level pass; 3 white-box tests skipped by design |
 
-The worst path that broke the 48 MHz run needed 25.0 ns. At the declared
-31.25 ns period the slow corner now reports 6.10 ns of margin, which matches
-the 6.25 ns the retime predicted. Area is not the constraint: of the 902,417 µm²
-core, only 383,307 µm² is standard-cell logic, and the rest is fill, decap, and
-the pad ring.
+The worst path that broke the 48 MHz run needed 25.0 ns. At the declared 31.25 ns
+period the slow corner reports 8.89 ns of margin on the 8×4 build, which is more
+than the 6×4 build had (6.10 ns) even with the larger capture buffer and the two
+helper opcodes: the extra tile row gave the placer room to spread the logic.
+Area is not the constraint either — of the 1,208,170 µm² core, 469,393 µm² is
+standard-cell logic and the rest is fill, decap and the pad ring.
+
+OpenROAD reports three classes of non-timing violations on this build, recorded
+here rather than rounded away: 41 max-slew and 2 max-cap reports at the slow
+corner, 293 max-fanout reports across corners, and one disconnected (non
+critical) pin. None of them is a setup or hold violation, the flow's own error
+count is 0, and `precheck` passed; they are reported by the flow as warnings.
 
 Every job passed: `gds`, `precheck`, `gl_test`, and the optional Pages `viewer`.
 The viewer first failed with HTTP 404 because GitHub Pages had never been

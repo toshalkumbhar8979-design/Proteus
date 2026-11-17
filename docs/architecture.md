@@ -249,8 +249,9 @@ the waits.
 
 The local Yosys/ABC area run does not include place-and-route parasitics. The
 Tiny Tapeout GDS action is the authority for the final timing and precheck, and
-the 32 MHz build passed it: slow-corner setup slack is +6.10 ns with 0 violating
-paths, and the last hardened 6×4 netlist uses 383,307 µm² of placed cells. `src/config.json`
+the 32 MHz build passed it: slow-corner setup slack is +8.90 ns with 0 violating
+paths, and the signed-off 8×4 netlist uses 469,393 µm² of placed cells in a
+1,208,170 µm² core, 38.9% utilisation. `src/config.json`
 and `info.yaml` declare 31.25 ns / 32 MHz; do not raise the clock without a new
 hardened timing run and a fresh protocol-rate check.
 
